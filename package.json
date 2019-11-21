@@ -1,0 +1,36 @@
+{
+  "name": "concat-files",
+  "version": "0.0.1",
+  "description": "Concat files in Node.js",
+  "main": "index.js",
+  "scripts": {
+    "format:check": "prettier --check src/**",
+    "format": "prettier --write src/**",
+    "lint": "eslint --ext .ts src/",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "command": "node dist/index"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avine/concat-files.git"
+  },
+  "author": "Stéphane Francel <contact@avine.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/avine/concat-files/issues"
+  },
+  "homepage": "https://github.com/avine/concat-files#readme",
+  "devDependencies": {
+    "@types/node": "^12.12.11",
+    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/parser": "^2.8.0",
+    "eslint": "^6.6.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-import-resolver-typescript": "^2.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "prettier": "^1.19.1",
+    "typescript": "^3.7.2"
+  }
+}

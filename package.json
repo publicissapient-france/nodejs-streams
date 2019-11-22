@@ -9,7 +9,8 @@
     "lint": "eslint --ext .ts src/",
     "test": "jest",
     "build": "tsc",
-    "command": "node dist/index"
+    "prod": "node dist/index",
+    "dev": "ts-node src/index"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
     "jest": "^24.9.0",
     "prettier": "^1.19.1",
     "ts-jest": "^24.1.0",
+    "ts-node": "^8.5.2",
     "typescript": "^3.7.2"
   }
 }

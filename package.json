@@ -8,7 +8,7 @@
     "format": "prettier --write src/**",
     "lint": "eslint --ext .ts src/",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "command": "node dist/index"
   },
   "repository": {
@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/avine/concat-files#readme",
   "devDependencies": {
+    "@types/jest": "^24.0.23",
     "@types/node": "^12.12.11",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
@@ -30,7 +31,9 @@
     "eslint-config-prettier": "^6.7.0",
     "eslint-import-resolver-typescript": "^2.0.0",
     "eslint-plugin-import": "^2.18.2",
+    "jest": "^24.9.0",
     "prettier": "^1.19.1",
+    "ts-jest": "^24.1.0",
     "typescript": "^3.7.2"
   }
 }

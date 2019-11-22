@@ -7,8 +7,8 @@
     "format:check": "prettier --check src/**",
     "format": "prettier --write src/**",
     "lint": "eslint --ext .ts src/",
-    "build": "tsc",
     "test": "jest",
+    "build": "tsc",
     "command": "node dist/index"
   },
   "repository": {

@@ -4,7 +4,7 @@
     "node": true
   },
   "extends": [
-    "airbnb-base", 
+    "airbnb-base",
 
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
@@ -29,9 +29,6 @@
     "import"
   ],
   "root": true,
-  "rules": {
-    "import/no-unresolved": "error"
-  },
   "settings": {
     "import/parsers": {
       "@typescript-eslint/parser": [".ts"]
@@ -41,5 +38,13 @@
         "alwaysTryTypes": true
       }
     }
+  },
+  "rules": {
+    "class-methods-use-this": "off",
+    "import/no-unresolved": "error",
+    "max-classes-per-file": "off",
+    "no-underscore-dangle": 0,
+    "no-console": "off",
+    "@typescript-eslint/no-use-before-define": "off"
   }
 }

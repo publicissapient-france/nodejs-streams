@@ -1,28 +1,57 @@
-import Counter from './counter';
-import logFactory from './log-factory';
+import ReadableCounter from './counter';
+import log from './log';
+import timer from './timer';
 
-const log = logFactory('after');
+const dataLimit = 6;
+const readable = new ReadableCounter(dataLimit);
 
-const stream = new Counter(6, log);
+readable.on('end', () => log('* end *'));
 
-stream.on('end', () => log('* end *'));
+readable.on('data', dataHandler);
 
-stream.on('data', dataHandler);
+const mode = readable.isPaused() ? 'paused' : 'flowing';
+log(`* ${mode} *`);
 
-log(stream.isPaused() ? 'paused' : 'flowing');
-
-setTimeout(() => {
-  log('* off(data) *');
-  stream.off('data', dataHandler);
-  stream.pause();
+timer('off(data)', () => {
+  readable.off('data', dataHandler);
+  readable.pause();
 }, 2500);
 
-setTimeout(() => {
-  log('* on(data) *');
-  stream.on('data', dataHandler);
-  stream.resume();
+timer('on(data)', () => {
+  readable.on('data', dataHandler);
+  readable.resume();
 }, 4500);
 
 function dataHandler(chunk: string): void {
   process.stdout.write(chunk);
 }
+
+/* === CONSOLE OUTPUT ===
+
+* flowing *
+
+1
+<0> flowing
+
+2
+<0> flowing
+
+* off(data) *
+
+<2> paused
+<4> paused
+
+* on(data) *
+
+3
+4
+
+5
+<0> flowing
+
+6
+<0> flowing
+
+<0> flowing
+
+* end */

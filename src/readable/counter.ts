@@ -1,28 +1,47 @@
 import { Readable } from 'stream';
 
-import { Log } from './log-factory';
+import log from './log';
 
-export default class Counter extends Readable {
-  data = 0;
+export default class ReadableCounter extends Readable {
+  interval = 1000;
 
-  constructor(public limit: number, public log: Log) {
+  private data = 0;
+
+  constructor(public dataLimit: number, public batchSize = 1) {
     super({ encoding: 'utf8' });
+
+    this.check();
+  }
+
+  private check(): void {
+    if (this.dataLimit % this.batchSize !== 0) {
+      throw new Error('"dataLimit" should be a multiple of "batchSize"');
+    }
   }
 
   _read(): void {
-    setTimeout(() => this.pushData(), 1000);
+    setTimeout(() => {
+      this.batchData();
+      this.logStatus();
+    }, this.interval);
+  }
+
+  private batchData(): void {
+    Array.from(Array(this.batchSize)).forEach(() => this.pushData());
   }
 
   private pushData(): void {
     this.data += 1;
 
-    if (this.data <= this.limit) {
+    if (this.data <= this.dataLimit) {
       this.push(`\n${this.data}`);
     } else {
       this.push(null);
     }
+  }
 
-    const status = this.isPaused() ? 'paused' : 'flowing';
-    this.log(`<${this.readableLength}> ${status}`);
+  private logStatus(): void {
+    const mode = this.isPaused() ? 'paused' : 'flowing';
+    log(`<${this.readableLength}> ${mode}`);
   }
 }

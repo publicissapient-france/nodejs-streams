@@ -1,29 +1,53 @@
-import Counter from './counter';
-import logFactory from './log-factory';
+import ReadableCounter from './counter';
+import log from './log';
+import timer from './timer';
 
-const log = logFactory('before');
+const dataLimit = 6;
+const readable = new ReadableCounter(dataLimit);
 
-const stream = new Counter(6, log);
+readable.on('end', () => log('* end *'));
 
-stream.on('end', () => log('* end *'));
+readable.on('readable', readableHandler);
 
-stream.on('readable', readableHandler);
+const mode = readable.isPaused() ? 'paused' : 'flowing';
+log(`* ${mode} *`);
 
-log(stream.isPaused() ? 'paused' : 'flowing');
-
-setTimeout(() => {
-  log('* off(readable) *');
-  stream.off('readable', readableHandler);
-}, 2500);
-
-setTimeout(() => {
-  log('* on(readable) *');
-  stream.on('readable', readableHandler);
-}, 4500);
+timer('off(readable)', () => readable.off('readable', readableHandler), 2500);
+timer('on(readable)', () => readable.on('readable', readableHandler), 4500);
 
 function readableHandler(): void {
   let chunk: string;
-  while ((chunk = stream.read()) !== null) { // eslint-disable-line no-cond-assign
+  while ((chunk = readable.read()) !== null) { // eslint-disable-line no-cond-assign
     process.stdout.write(chunk);
   }
 }
+
+/* === CONSOLE OUTPUT ===
+
+* paused *
+
+<2> paused
+1
+
+<2> paused
+2
+
+* off(readable) *
+
+<2> paused
+<4> paused
+
+* on(readable) *
+
+3
+4
+
+<2> paused
+5
+
+<2> paused
+6
+
+<0> paused
+
+* end */

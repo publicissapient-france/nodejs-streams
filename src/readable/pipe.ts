@@ -1,22 +1,46 @@
-import Counter from './counter';
-import logFactory from './log-factory';
+import ReadableCounter from './counter';
+import log from './log';
+import timer from './timer';
 
-const log = logFactory('after');
+const dataLimit = 6;
+const readable = new ReadableCounter(dataLimit);
 
-const stream = new Counter(6, log);
+readable.on('end', () => log('* end *'));
 
-stream.on('end', () => log('* end *'));
+readable.pipe(process.stdout);
 
-stream.pipe(process.stdout);
+const mode = readable.isPaused() ? 'paused' : 'flowing';
+log(`* ${mode} *`);
 
-log(stream.isPaused() ? 'paused' : 'flowing');
+timer('unpipe', () => readable.unpipe(process.stdout), 2500);
+timer('pipe', () => readable.pipe(process.stdout), 4500);
 
-setTimeout(() => {
-  log('* unpipe *');
-  stream.unpipe(process.stdout);
-}, 2500);
+/* === CONSOLE OUTPUT ===
 
-setTimeout(() => {
-  log('* pipe *');
-  stream.pipe(process.stdout);
-}, 4500);
+* flowing *
+
+1
+<0> flowing
+
+2
+<0> flowing
+
+* unpipe *
+
+<2> paused
+<4> paused
+
+* pipe *
+
+3
+4
+
+5
+<0> flowing
+
+6
+<0> flowing
+
+<0> flowing
+
+* end */

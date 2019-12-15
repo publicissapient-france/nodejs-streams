@@ -4,8 +4,8 @@
   "description": "Concat files in Node.js",
   "main": "index.js",
   "scripts": {
-    "format:check": "prettier --check src/**",
-    "format": "prettier --write src/**",
+    "format:check": "prettier --check src/**/*",
+    "format": "prettier --write src/**/*",
     "lint": "eslint --ext .ts src/",
     "test": "jest",
     "build": "tsc",

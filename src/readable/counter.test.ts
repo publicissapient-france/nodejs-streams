@@ -83,7 +83,7 @@ test('ReadableCounter with "readable" handler', done => {
 
   stream.on('readable', () => {
     let chunk: string;
-    while ((chunk = stream.read()) !== null) { // eslint-disable-line no-cond-assign
+    while ((chunk = stream.read()) !== null) {
       readReturnMock(chunk);
     }
   });
@@ -113,7 +113,7 @@ test('ReadableCounter with "readable" handler and batch', done => {
 
   stream.on('readable', () => {
     let chunk: string;
-    while ((chunk = stream.read()) !== null) { // eslint-disable-line no-cond-assign
+    while ((chunk = stream.read()) !== null) {
       readReturnMock(chunk);
     }
   });
@@ -142,7 +142,7 @@ test('ReadableCounter with "readable" handler, batch and highWaterMark reached',
 
   stream.on('readable', () => {
     let chunk: string;
-    while ((chunk = stream.read()) !== null) { // eslint-disable-line no-cond-assign
+    while ((chunk = stream.read()) !== null) {
       readReturnMock(chunk);
     }
   });

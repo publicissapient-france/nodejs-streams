@@ -5,14 +5,14 @@ import log from './helpers/log';
 export default class ReadableCounter extends Readable {
   speed = 1000;
 
-  enableLogs = true;
+  logEnabled = true;
 
   private data = 0;
 
   constructor(
     public dataLimit: number,
     public batchSize = 1,
-    highWaterMark = 16384,
+    highWaterMark?: number,
   ) {
     super({ encoding: 'utf8', highWaterMark });
   }
@@ -20,8 +20,8 @@ export default class ReadableCounter extends Readable {
   _read(): void {
     setTimeout(() => {
       this.pushDataBatch();
-      if (this.enableLogs) {
-        this.logStatus();
+      if (this.logEnabled) {
+        this.log();
       }
     }, this.speed);
   }
@@ -44,7 +44,7 @@ export default class ReadableCounter extends Readable {
     return this.push(null);
   }
 
-  private logStatus(): void {
+  private log(): void {
     const mode = this.isPaused() ? 'paused' : 'flowing';
     log(`<${this.readableLength}> ${mode}`);
   }

@@ -7,7 +7,7 @@ jest.mock('log-update');
 test('WritableLogger .write() should call .next()', () => {
   jest.useFakeTimers();
 
-  const stream = new WritableLogger(100);
+  const stream = new WritableLogger();
 
   const nextMock = jest.fn();
 
@@ -42,13 +42,9 @@ test('WritableLogger .write() should return false when highWaterMark reached', (
   jest.useFakeTimers();
 
   const highWaterMark = 3;
-  const stream = new WritableLogger(100, highWaterMark);
+  const stream = new WritableLogger(highWaterMark);
 
-  const isWritable = [
-    stream.write('A'),
-    stream.write('B'),
-    stream.write('C'),
-  ];
+  const isWritable = [stream.write('A'), stream.write('B'), stream.write('C')];
 
   jest.runOnlyPendingTimers();
   jest.runOnlyPendingTimers();
@@ -63,7 +59,7 @@ test('WritableLogger should emit "drain" event when writable again', () => {
   jest.useFakeTimers();
 
   const highWaterMark = 3;
-  const stream = new WritableLogger(100, highWaterMark);
+  const stream = new WritableLogger(highWaterMark);
 
   const drainMock = jest.fn();
   stream.on('drain', drainMock);
@@ -96,5 +92,5 @@ function logUpdateOutputMock(writeableLength: number, chunk: string): string {
     throw new Error(`Unhandled writeableLength=${writeableLength}`);
   }
   const { length, progress } = output[writeableLength];
-  return `\n<${length}> ${progress}\n\n${chunk}\n\n`;
+  return `\n<${length}> ${progress}\n${chunk}\n\n`;
 }

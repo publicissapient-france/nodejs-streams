@@ -9,9 +9,7 @@ class FeedWritable {
 
   dataLimit = 100;
 
-  constructor(public speed: number, private writable: Writable) {
-    this.handleFinish();
-  }
+  constructor(public speed: number, private writable: Writable) {}
 
   start(): void {
     if (this.interval === null) {
@@ -52,38 +50,9 @@ class FeedWritable {
     this.stop();
     this.writable.end(this.data.toString());
   }
-
-  private handleFinish(): void {
-    this.writable.on('finish', () => console.log('* finish *')); // FIXME: NOT visible...
-  }
 }
 
-new FeedWritable(40, new WritableLogger(120)).start();
+const writable = new WritableLogger(50);
+writable.speed = 150;
 
-/*
-const stream = new WritableLogger(120);
-
-stream.on('finish', () => console.log('* finish *')); // FIXME: NOT visible...
-
-let count = 0;
-
-function feedStream(): void {
-  const interval = setInterval(() => {
-    count += 1;
-
-    if (count < 100) {
-      const isWritable = stream.write(count.toString());
-
-      if (!isWritable) {
-        clearInterval(interval);
-        stream.once('drain', feedStream);
-      }
-    } else {
-      clearInterval(interval);
-      stream.end(count.toString());
-    }
-  }, 40);
-}
-
-feedStream();
-*/
+new FeedWritable(50, writable).start();

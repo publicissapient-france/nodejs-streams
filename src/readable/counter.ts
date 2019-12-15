@@ -1,43 +1,47 @@
 import { Readable } from 'stream';
 
-import log from './log';
+import log from './helpers/log';
 
 export default class ReadableCounter extends Readable {
-  interval = 1000;
+  speed = 1000;
+
+  enableLogs = true;
 
   private data = 0;
 
-  constructor(public dataLimit: number, public batchSize = 1) {
-    super({ encoding: 'utf8' });
-
-    this.check();
-  }
-
-  private check(): void {
-    if (this.dataLimit % this.batchSize !== 0) {
-      throw new Error('"dataLimit" should be a multiple of "batchSize"');
-    }
+  constructor(
+    public dataLimit: number,
+    public batchSize = 1,
+    highWaterMark = 16384,
+  ) {
+    super({ encoding: 'utf8', highWaterMark });
   }
 
   _read(): void {
     setTimeout(() => {
-      this.batchData();
-      this.logStatus();
-    }, this.interval);
+      this.pushDataBatch();
+      if (this.enableLogs) {
+        this.logStatus();
+      }
+    }, this.speed);
   }
 
-  private batchData(): void {
-    Array.from(Array(this.batchSize)).forEach(() => this.pushData());
+  private pushDataBatch(): void {
+    const batchSize = Math.min(this.batchSize, this.dataLimit - this.data + 1);
+    for (let i = 0; i < batchSize; i += 1) {
+      if (!this.pushData()) {
+        return;
+      }
+    }
   }
 
-  private pushData(): void {
+  private pushData(): boolean {
     this.data += 1;
 
     if (this.data <= this.dataLimit) {
-      this.push(`\n${this.data}`);
-    } else {
-      this.push(null);
+      return this.push(`\n${this.data}`);
     }
+    return this.push(null);
   }
 
   private logStatus(): void {

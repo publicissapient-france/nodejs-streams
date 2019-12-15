@@ -1,9 +1,8 @@
-import ReadableCounter from './counter';
-import log from './log';
-import timer from './timer';
+import ReadableCounter from '../counter';
+import log from '../helpers/log';
+import timer from '../helpers/timer';
 
-const dataLimit = 6;
-const readable = new ReadableCounter(dataLimit);
+const readable = new ReadableCounter(6);
 
 readable.on('end', () => log('* end *'));
 

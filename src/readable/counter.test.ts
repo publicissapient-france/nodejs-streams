@@ -1,13 +1,5 @@
 import ReadableCounter from './counter';
 
-test('ReadableCounter should check configuration', () => {
-  expect(() => new ReadableCounter(4, 1)).not.toThrowError();
-  expect(() => new ReadableCounter(4, 2)).not.toThrowError();
-  expect(() => new ReadableCounter(4, 4)).not.toThrowError();
-  expect(() => new ReadableCounter(4, 3)).toThrowError();
-  expect(() => new ReadableCounter(4, 5)).toThrowError();
-});
-
 test('ReadableCounter ._read() should call .push()', () => {
   jest.useFakeTimers();
 
@@ -33,48 +25,59 @@ test('ReadableCounter ._read() should call .push()', () => {
 });
 
 test('ReadableCounter with "data" handler', done => {
-  const stream = new ReadableCounter(2);
+  const stream = new ReadableCounter(3);
+  stream.speed = 0;
 
-  stream.interval = 0;
+  const readSpy = jest.spyOn(stream, '_read');
+  const pushSpy = jest.spyOn(stream, 'push');
 
   const dataHandlerMock = jest.fn();
-
   stream.on('data', dataHandlerMock);
 
   expect(stream.isPaused()).toBeFalsy();
 
   stream.on('end', () => {
-    expect(dataHandlerMock).toHaveBeenCalledTimes(2);
+    expect(readSpy).toHaveBeenCalledTimes(4);
+    expect(pushSpy).toHaveBeenCalledTimes(4);
+
+    expect(dataHandlerMock).toHaveBeenCalledTimes(3);
     expect(dataHandlerMock).toHaveBeenNthCalledWith(1, '\n1');
     expect(dataHandlerMock).toHaveBeenNthCalledWith(2, '\n2');
+    expect(dataHandlerMock).toHaveBeenNthCalledWith(3, '\n3');
     done();
   });
 });
 
 test('ReadableCounter with "data" handler and batch', done => {
-  const batchSize = 2;
-  const stream = new ReadableCounter(2, batchSize);
+  const stream = new ReadableCounter(3, 2);
+  stream.speed = 0;
 
-  stream.interval = 0;
+  const readSpy = jest.spyOn(stream, '_read');
+  const pushSpy = jest.spyOn(stream, 'push');
 
   const dataHandlerMock = jest.fn();
-
   stream.on('data', dataHandlerMock);
 
   expect(stream.isPaused()).toBeFalsy();
 
   stream.on('end', () => {
-    expect(dataHandlerMock).toHaveBeenCalledTimes(2);
+    expect(readSpy).toHaveBeenCalledTimes(2);
+    expect(pushSpy).toHaveBeenCalledTimes(4);
+
+    expect(dataHandlerMock).toHaveBeenCalledTimes(3);
     expect(dataHandlerMock).toHaveBeenNthCalledWith(1, '\n1');
     expect(dataHandlerMock).toHaveBeenNthCalledWith(2, '\n2');
+    expect(dataHandlerMock).toHaveBeenNthCalledWith(3, '\n3');
     done();
   });
 });
 
 test('ReadableCounter with "readable" handler', done => {
-  const stream = new ReadableCounter(2);
+  const stream = new ReadableCounter(3);
+  stream.speed = 0;
 
-  stream.interval = 0;
+  const readSpy = jest.spyOn(stream, '_read');
+  const pushSpy = jest.spyOn(stream, 'push');
 
   const readReturnMock = jest.fn();
 
@@ -88,18 +91,23 @@ test('ReadableCounter with "readable" handler', done => {
   expect(stream.isPaused()).toBeTruthy();
 
   stream.on('end', () => {
-    expect(readReturnMock).toBeCalledTimes(2);
+    expect(readSpy).toHaveBeenCalledTimes(4);
+    expect(pushSpy).toHaveBeenCalledTimes(4);
+
+    expect(readReturnMock).toBeCalledTimes(3);
     expect(readReturnMock).toHaveBeenNthCalledWith(1, '\n1');
     expect(readReturnMock).toHaveBeenNthCalledWith(2, '\n2');
+    expect(readReturnMock).toHaveBeenNthCalledWith(3, '\n3');
     done();
   });
 });
 
 test('ReadableCounter with "readable" handler and batch', done => {
-  const batchSize = 2;
-  const stream = new ReadableCounter(2, batchSize);
+  const stream = new ReadableCounter(3, 2);
+  stream.speed = 0;
 
-  stream.interval = 0;
+  const readSpy = jest.spyOn(stream, '_read');
+  const pushSpy = jest.spyOn(stream, 'push');
 
   const readReturnMock = jest.fn();
 
@@ -113,8 +121,48 @@ test('ReadableCounter with "readable" handler and batch', done => {
   expect(stream.isPaused()).toBeTruthy();
 
   stream.on('end', () => {
-    expect(readReturnMock).toBeCalledTimes(1);
-    expect(readReturnMock).toHaveBeenCalledWith('\n1\n2');
+    expect(readSpy).toHaveBeenCalledTimes(2);
+    expect(pushSpy).toHaveBeenCalledTimes(4);
+
+    expect(readReturnMock).toBeCalledTimes(2);
+    expect(readReturnMock).toHaveBeenNthCalledWith(1, '\n1\n2');
+    expect(readReturnMock).toHaveBeenNthCalledWith(2, '\n3');
+    done();
+  });
+});
+
+test('ReadableCounter with "readable" handler, batch and highWaterMark reached', done => {
+  const stream = new ReadableCounter(5, 5, 6);
+  stream.speed = 0;
+
+  const readSpy = jest.spyOn(stream, '_read');
+  const pushSpy = jest.spyOn(stream, 'push');
+
+  const readReturnMock = jest.fn();
+
+  stream.on('readable', () => {
+    let chunk: string;
+    while ((chunk = stream.read()) !== null) { // eslint-disable-line no-cond-assign
+      readReturnMock(chunk);
+    }
+  });
+
+  expect(stream.isPaused()).toBeTruthy();
+
+  stream.on('end', () => {
+    expect(readSpy).toHaveBeenCalledTimes(2);
+    expect(pushSpy).toHaveBeenCalledTimes(6);
+
+    expect(pushSpy).toHaveNthReturnedWith(1, true);
+    expect(pushSpy).toHaveNthReturnedWith(2, true);
+    expect(pushSpy).toHaveNthReturnedWith(3, false); // highWaterMark of 6 bits reached
+    expect(pushSpy).toHaveNthReturnedWith(4, true);
+    expect(pushSpy).toHaveNthReturnedWith(5, true);
+    expect(pushSpy).toHaveNthReturnedWith(6, false);
+
+    expect(readReturnMock).toBeCalledTimes(2);
+    expect(readReturnMock).toHaveBeenNthCalledWith(1, '\n1\n2\n3');
+    expect(readReturnMock).toHaveBeenNthCalledWith(2, '\n4\n5');
     done();
   });
 });

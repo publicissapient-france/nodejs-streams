@@ -1,7 +1,7 @@
 {
-  "name": "concat-files",
+  "name": "nodejs-streams",
   "version": "0.0.1",
-  "description": "Concat files in Node.js",
+  "description": "Comprendre les Streams en Node.js",
   "main": "index.js",
   "scripts": {
     "format:check": "prettier --check src/**/*",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/avine/concat-files.git"
+    "url": "git+https://github.com/xebia-france/nodejs-streams.git"
   },
   "author": "Stéphane Francel <contact@avine.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/avine/concat-files/issues"
+    "url": "https://github.com/xebia-france/nodejs-streams/issues"
   },
-  "homepage": "https://github.com/avine/concat-files#readme",
+  "homepage": "https://github.com/xebia-france/nodejs-streams#readme",
   "devDependencies": {
     "@types/jest": "^24.0.23",
     "@types/node": "^12.12.11",

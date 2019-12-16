@@ -1,3 +1,3 @@
-# concat-files
+# nodejs-streams
 
-Concat files in Node.js
+Comprendre les Streams en Node.js

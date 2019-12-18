@@ -101,8 +101,6 @@ Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks 
 
 En mode "flowing", le Stream se comporte en réalité comme un simple EventEmitter et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut.
 
-Voyons maintenant comment consommer le Stream en mode "paused".
-
 #### En mode "paused"
 
 Pour consommer le Stream en mode "paused", le consommateur doit se mettre à l'écoute des événements `"readable"` (ou appeler la méthode `pause()` si le Stream était précédemment en mode "flowing").
@@ -121,9 +119,9 @@ readable.on('readable', () => {
 });
 ```
 
-Dans ce cas, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode public `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
+Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode public `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
 
-En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et celle en mode "paused" aux "pull notifications" d'une API Rest.
+> En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et celle en mode "paused" aux "pull notifications" d'une API Rest.
 
 Revenons maintenant à la méthode privée `_read()`. A quel moment est-elle appelée par Node.js ?
 

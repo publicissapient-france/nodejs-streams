@@ -2,13 +2,13 @@
 
 ![Streams](./img/stream.jpg)
 
-Les [Streams](https://nodejs.org/api/stream.html) sont une des briques fonctionnelles au coeur de [Node.js](https://nodejs.org/) !
+Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Node.js](https://nodejs.org/) !
 
-Si vous avez touché à Node.js, vous avez certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP Request/Response`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
+Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP Request/Response`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
 
 Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres packages NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment (à vérifier)... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
-__Dans cet article, je vais vous expliquer jusque dans le détail le fonctionnement interne des Streams "Readable" et "Writable" et vous serez ensuite à l'aise pour les implémenter et les consommer.__
+__Dans cet article, je vais vous expliquer en détail le fonctionnement interne des Streams "Readable" et "Writable" et vous serez tout à fait à l'aise pour en implémenter et en consommer.__
 
 Et pour que tout cela soit vraiment fun, je vais utiliser [TypeScript](https://www.typescriptlang.org) comme langage de programmation et [Jest](https://jestjs.io) comme framework de test.
 
@@ -34,7 +34,7 @@ Après cette introduction, passons à la pratique.
 
 ## Les Streams Readable
 
-Pour cette partie, vous allez implémenter un Stream nommé `ReadableCounter` qui émet des nombres de 1 à 6, puis se termine.
+Pour cette partie, vous allez implémenter un Stream que vous aller nommer `ReadableCounter` et qui émet des nombres de 1 à 6 puis se termine.
 
 Pour cela, vous devez créer une classe enfant qui hérite de la classe `Readable`, dont le contrat d'interface vous demande d'implémenter la méthode `_read()`. La méthode `_read()` à pour rôle d'émettre des chunks en appelant au moins une fois la méthode `push(chunk)` de manière synchrone ou asynchrone. Et pour terminer le Stream, vous devez appeler la méthode `push` avec `null` en paramètre comme ceci: `push(null)`.
 
@@ -57,13 +57,13 @@ class ReadableCounter extends Readable {
 }
 ```
 
-Le consommateur de votre Stream ne doit pas appeler la méthode `_read()`, considérée privée. C'est Node.js qui va l'appeler pour lui, au moment qu'il juge opportun.
+Le consommateur de votre Stream ne doit pas appeler la méthode `_read()`, considérée privée. C'est Node.js qui va l'appeler pour lui, au moment opportun, autant de fois qu'il le faut.
 
 Nous allons revenir sur ce point essentiel un peu plus loin, mais tout d'abord voyons comment consommer votre Stream.
 
 ### Les modes "paused" et "flowing"
 
-Un Stream Readable a 2 états possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ses états (et donc même s'il est en mode "paused" !). La méthode `isPaused()` permet de récupérer cet état.
+Un Stream Readable a 2 états possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ces états (et donc même s'il est en mode "paused" !). La méthode `isPaused()` permet de récupérer cet état.
 
 A sa création un Stream Readable est en mode "paused".
 
@@ -71,18 +71,18 @@ A sa création un Stream Readable est en mode "paused".
 
 Pour consommer un Stream Readable, le plus naturel consiste à le passer en mode "flowing" pour qu'il commence à émettre des chunks.
 
-Pour cela, le consommateur peut se mettre à l'écoute des événements `"data"` comme ceci :
+Pour cela, le consommateur doit se mettre à l'écoute des événements `"data"` comme ceci :
 
 ```ts
 const readable = new ReadableCounter();
 
-console.log(readable.isPaused()); // = true
+expect(readable.isPaused()).toBeTruthy();
 
 readable.on('data', chunk => {
   // Faire quelque chose avec `chunk`...
-
-  console.log(readable.isPaused()); // = false
 });
+
+expect(readable.isPaused()).toBeFalsy();
 ```
 
 ...ou appeler directement la méthode `resume()`, comme cela :
@@ -90,14 +90,14 @@ readable.on('data', chunk => {
 ```ts
 const readable = new ReadableCounter();
 
-console.log(readable.isPaused()); // = true
+expect(readable.isPaused()).toBeTruthy();
 
 readable.resume();
 
-console.log(readable.isPaused()); // = false
+expect(readable.isPaused()).toBeFalsy();
 ```
 
-Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks sont bel et bien émis mais du même coup perdus, puisque personne ne les récupère.
+Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks sont bel et bien émis mais dans le même temps perdus, puisque personne ne les récupère.
 
 En mode "flowing", le Stream se comporte en réalité comme un simple EventEmitter et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut.
 
@@ -108,22 +108,23 @@ Pour consommer le Stream en mode "paused", le consommateur doit se mettre à l'�
 ```ts
 const readable = new ReadableCounter();
 
-console.log(readable.isPaused()); // = true
+expect(readable.isPaused()).toBeTruthy();
 
 readable.on('readable', () => {
-  let chunk;
+  let chunk: any;
   while ((chunk = readable.read()) !== null) {
     // Faire quelque chose avec `chunk`...
   }
-  console.log(readable.isPaused()); // = true
 });
+
+expect(readable.isPaused()).toBeTruthy();
 ```
 
 Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode public `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
 
-> En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et celle en mode "paused" aux "pull notifications" d'une API Rest.
+> En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull notifications" d'une API Rest.
 
-Revenons maintenant à la méthode privée `_read()`. A quel moment est-elle appelée par Node.js ?
+Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle appelée par Node.js ?
 
 ### Séquence des appels à `_read()`
 

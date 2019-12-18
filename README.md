@@ -103,7 +103,7 @@ En mode "flowing", le Stream se comporte en réalité comme un simple EventEmitt
 
 #### En mode "paused"
 
-Pour consommer le Stream en mode "paused", le consommateur doit se mettre à l'écoute des événements `"readable"` (ou appeler la méthode `pause()` si le Stream était précédemment en mode "flowing").
+Pour consommer le Stream en mode "paused", le consommateur doit se mettre à l'écoute des événements `"readable"`.
 
 ```ts
 const readable = new ReadableCounter();
@@ -127,11 +127,11 @@ Revenons maintenant à la méthode privée `_read()`. A quel moment est-elle app
 
 ### Séquence des appels à `_read()`
 
-La méthode `_read()` est appelée pour la première fois lorsque le consommateur se met à l'écoute des événements `"data"` ou `"readable"`.
+La méthode `_read()` est appelée pour la première fois lorsque le consommateur se met à l'écoute des événements `"data"` ou `"readable"` (ou suite à l'appel de la méthode `resume()`).
 
 Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
-
+___
 
 
 

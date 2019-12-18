@@ -1,14 +1,18 @@
-# Implémenter et consommer des Streams "Readable" et "Writable" en Node.js
+# Implémenter et consommer les Streams "Readable" et "Writable" de Node.js
+
+![Streams](./img/stream.jpeg)
 
 Les Streams sont une brique fonctionnelle essentielle de Node.js !
 
-Si vous avez touché à Node.js, vous avez certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, HTTP Request/Response, TCP Socket, fs read, zlib et crypto, implémentent tous l'interface Streams.
+Si vous avez touché à Node.js, vous avez certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP Request/Response`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
 
 Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres packages NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment (à vérifier)... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose ?). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
-Dans cet article, je vais vous montrer en détail le fonctionnement des Streams "Readable" et "Writable". Vous allez comprendre leur fonctionnement interne et vous saurez en implémenter et en consommer.
+__Dans cet article, je vais vous expliquer de manière progressive et détaillée, le fonctionnement interne des Streams "Readable" et "Writable" et vous allez apprendre à les implémenter et les consommer.__
 
 Et pour que tout cela soit vraiment fun, nous allons utiliser TypeScript comme langage de programmation et Jest comme framework de test.
+
+Tous les exemples de code de cet article sont accessibles depuis le Repo suivant : [https://github.com/xebia-france/nodejs-streams](https://github.com/xebia-france/nodejs-streams).
 
 ## Mais alors un Stream c'est quoi ?
 
@@ -16,13 +20,15 @@ Un __Stream__, c'est un flot de données de __taille inconnue__ et dont le conte
 
 En fait, en interne un Stream utilise justement un Buffer comme zone tampon pour stocker les chunks qu'il détient.
 
-Si un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation, on dit alors que ce Stream est accessible en lecture (ou "Readable"). Et si vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit alors que ce Stream est est accessible en écriture (ou "Writable").
+Si un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation, on dit alors que ce Stream est accessible en lecture (ou "Readable"). Et si vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit alors que ce Stream est accessible en écriture (ou "Writable").
 
-Mais un Stream c'est aussi un émetteur d'événements (ou "EventEmitter"). Par exemple, un Stream "Readable" va emettre des événements "readable" pour indiquer au consommateur que de la donnée est prête à être consommée.
+Mais un Stream c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels nous allons pouvoir nous abonner pour le suivre tout au long de son cycle de vie. Par exemple, un Stream "Readable" va emettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
 
-En résumé, l'équation est assez simple : Buffer + EventEmitter = Stream.
+En résumé, l'équation est assez simple : __Buffer + EventEmitter = Stream__.
 
-## Readable Stream
+Passons maintenant à la pratique.
+
+## Les Streams Readable
 
 ### Les modes "paused" et "flowing"
 

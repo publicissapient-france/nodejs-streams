@@ -34,7 +34,7 @@ Après cette introduction, passons à la pratique.
 
 ## Les Streams Readable
 
-Pour cette partie, vous allez implémenter un Stream que vous aller nommer `ReadableCounter` et qui émet des nombres de 1 à 6 puis se termine.
+Pour cette partie, vous allez implémenter un Stream nommé `ReadableCounter` qui émet des nombres de 1 à 6 puis se termine.
 
 Pour cela, vous devez créer une classe enfant qui hérite de la classe `Readable`, dont le contrat d'interface vous demande d'implémenter la méthode `_read()`. La méthode `_read()` à pour rôle d'émettre des chunks en appelant au moins une fois la méthode `push(chunk)` de manière synchrone ou asynchrone. Et pour terminer le Stream, vous devez appeler la méthode `push` avec `null` en paramètre comme ceci: `push(null)`.
 
@@ -132,7 +132,33 @@ La méthode `_read()` est appelée pour la première fois lorsque le consommateu
 
 Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
+Si vous avez survécu à cette première partie, sachez que vous avez passé le plus dur ! Contrairement aux Streams "Readable", les Streams "Writable" sont beaucoup plus simples à appréhender.
+
+## Les Streams Writable
+
+Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les nouveaux chunks qui lui sont poussés ainsi que la taille de son Buffer interne. La propriété `writableLength` permet de récupérer la taille du Buffer interne.
+
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write()`. La méthode `_write(chunk, encoding, next)` à pour rôle de traiter chaque `chunk` reçu (fourni en premier paramètre) et doit informer le Stream à chaque traitement terminé, en appelant la fonction `next()` (fournie en troisième paramètre).
+
+Si le consommateur pousse un nouveau chunk avant que le traitement du précédent chunk ne soit terminé alors le nouveau chunk est stocké dans le Buffer interne.
+
+En d'autres termes, le Stream "Writable" traite les données une par une dans l'ordre d'arrivée de manière séquentielle.
+
+> Pour la partie logging, vous allez utiliser le package NPM [log-update](https://www.npmjs.com/package/log-update), qui comme son nom l'indique, permet d'afficher puis mettre à jour un texte dans la console, sans changer de ligne.
+
+```ts
+import { Writable } from 'stream';
+
+class WritableLogger extends Writable {
+  _write(chunk: any, encoding: string, next: (error?: Error) => void): void {
+    console.log(chunk, this.writableLength.toString());
+    next();
+  }
+}
+```
+
 ___
+
 
 
 

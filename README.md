@@ -138,24 +138,29 @@ Si vous avez survécu à cette première partie, sachez que vous avez passé le 
 
 Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les nouveaux chunks qui lui sont poussés ainsi que la taille de son Buffer interne. La propriété `writableLength` permet de récupérer la taille du Buffer interne.
 
-Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write()`. La méthode `_write(chunk, encoding, next)` à pour rôle de traiter chaque `chunk` reçu (fourni en premier paramètre) et doit informer le Stream à chaque traitement terminé, en appelant la fonction `next()` (fournie en troisième paramètre).
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write()`, qui a une signature bien précise. La méthode `_write(chunk, encoding, next)` à pour rôle de traiter chaque `chunk` reçu et d'appeler la méthode `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
 
-Si le consommateur pousse un nouveau chunk avant que le traitement du précédent chunk ne soit terminé alors le nouveau chunk est stocké dans le Buffer interne.
-
-En d'autres termes, le Stream "Writable" traite les données une par une dans l'ordre d'arrivée de manière séquentielle.
+Si le consommateur pousse un nouveau chunk avant que le traitement du précédent ne soit terminé alors le nouveau chunk est stocké dans le Buffer interne. En d'autres termes, le Stream "Writable" traite les données une par une dans l'ordre d'arrivée de manière séquentielle, préservant ainsi l'ordre des Streams.
 
 > Pour la partie logging, vous allez utiliser le package NPM [log-update](https://www.npmjs.com/package/log-update), qui comme son nom l'indique, permet d'afficher puis mettre à jour un texte dans la console, sans changer de ligne.
 
 ```ts
+import logUpdate from 'log-update';
 import { Writable } from 'stream';
 
 class WritableLogger extends Writable {
   _write(chunk: any, encoding: string, next: (error?: Error) => void): void {
-    console.log(chunk, this.writableLength.toString());
+    logUpdate(`length=${this.writableLength} chunk=${chunk}`);
     next();
   }
 }
 ```
+
+Le consommateur de votre Stream ne doit pas appeler la méthode `_write()`, considérée privée. C'est Node.js qui va l'appeler pour lui, au moment opportun, autant de fois qu'il le faut.
+
+Pour consommer votre Stream, il faut poussr des chunks en appelant la méthode public `write()` (sans "_").
+
+### Séquence des appels à `_write()`
 
 ___
 

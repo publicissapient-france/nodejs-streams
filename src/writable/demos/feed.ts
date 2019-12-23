@@ -3,28 +3,17 @@ import { Writable } from 'stream';
 import WritableLogger from '../logger';
 
 class FeedWritable {
-  private interval: NodeJS.Timeout | null = null;
-
   private data = 0;
 
   dataLimit = 100;
 
   constructor(public speed: number, private writable: Writable) {}
 
-  start(): void {
-    if (this.interval === null) {
-      this.interval = setInterval(() => this.callback(), this.speed);
-    }
+  run(): void {
+    setTimeout(() => this.sendData(), this.speed);
   }
 
-  stop(): void {
-    if (this.interval !== null) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-  }
-
-  private callback(): void {
+  private sendData(): void {
     this.data += 1;
 
     if (this.data < this.dataLimit) {
@@ -36,18 +25,18 @@ class FeedWritable {
 
   private handleWrite(): void {
     const isWritable = this.writable.write(this.data.toString());
-    if (!isWritable) {
+    if (isWritable) {
+      this.run();
+    } else {
       this.handleDrainOnce();
     }
   }
 
   private handleDrainOnce(): void {
-    this.stop();
-    this.writable.once('drain', () => this.start());
+    this.writable.once('drain', () => this.run());
   }
 
   private handleEnd(): void {
-    this.stop();
     this.writable.end(this.data.toString());
   }
 }
@@ -55,4 +44,4 @@ class FeedWritable {
 const writable = new WritableLogger(50);
 writable.speed = 150;
 
-new FeedWritable(50, writable).start();
+new FeedWritable(50, writable).run();

@@ -32,7 +32,7 @@ __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.o
 
 Après cette introduction, passons à la pratique.
 
-## Les Streams Readable
+## Les Streams "Readable"
 
 Pour cette partie, vous allez implémenter un Stream nommé `ReadableCounter` qui émet des nombres de 1 à 6 puis se termine.
 
@@ -132,9 +132,29 @@ La méthode `_read()` est appelée pour la première fois lorsque le consommateu
 
 Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
-Si vous avez survécu à cette première partie, sachez que vous avez passé le plus dur ! Contrairement aux Streams "Readable", les Streams "Writable" sont beaucoup plus simples à appréhender.
+Une question subsiste. Que va-t-il se passer si votre Stream emet des chunks plus vite qu'ils ne sont consommés ? C'est ce que nous allons analyser maintenant.
 
-## Les Streams Writable
+### La taille limite du Buffer interne
+
+Vous avez compris qu'en mode "paused", la méthode `push(chunk)` (implémentation du Stream) permet l'envoi des chunks au Buffer interne, en vue de leur consommation, opérée par la méthode `read()` (consommation du Stream).
+
+Si les chunks ne sont pas consommés assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `push()` retourne `false`, pour indiquer à l'implémentation du Stream de ne plus envoyer de chunk.
+
+Dans ce cas, le Stream reste en attente jusqu'à ce que le consommateur vide le Buffer interne. Lorsque le Buffer est vidé, Node.js appelle automatiquement la méthode `_read()` pour relancer le Stream.
+
+A noter que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la class `Readable`.
+
+```ts
+class ReadableCounter extends Readable {
+  constructor(highWaterMark = 16384) {
+    super({ highWaterMark });
+  }
+}
+```
+
+> Si vous avez survécu à cette première partie, sachez que vous avez passé le plus dur ! Contrairement aux Streams "Readable", les Streams "Writable" sont beaucoup plus simples à appréhender.
+
+## Les Streams "Writable"
 
 Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les chunks qui lui sont poussés ainsi que la taille de son Buffer interne.
 
@@ -183,7 +203,7 @@ feedStream();
 
 De prime abord, le cycle de vie du Stream est assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write()`.
 
-Mais cette première implémentation comporte un défaut ! Car il est important de noter que la méthode `write()` retourne en fait un boolean, que nous n'avons pas exploité et dont le rôle est pourtant primordiale !
+Mais cette première implémentation comporte un défaut ! Car il est important de noter que la méthode `write()` retourne un boolean, que nous n'avons pas exploité et dont le rôle est pourtant primordiale !
 
 Pour comprendre son rôle, attardons-nous sur la méthode `_write()`.
 
@@ -193,7 +213,7 @@ Un Stream "Writable" traite les chunks un par un dans l'ordre d'arrivée, de man
 
 C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne.
 
-Mais le Buffer interne a une taille bien définie (appellée `highWaterMark`). C'est lorsque que cette limite est atteinte que la méthode `write()` retourne `false`, pour indiquer au consommateur que, temporairement, il ne doit plus pousser de nouveaux chunks. Ce temps mort, permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Une fois le Buffer vidée, le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
+Mais le Buffer interne est limité par sa taille bien définie, appellée `highWaterMark`. C'est lorsque que cette limite est atteinte que la méthode `write()` retourne `false`, pour indiquer au consommateur que, temporairement, il ne doit plus pousser de nouveaux chunks. Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Une fois le Buffer vidé, le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
 
 On peut modifier la fonction `feedStream()` pour tenir compte de cette contrainte.
 
@@ -221,11 +241,7 @@ function feedStream(): void {
 feedStream();
 ```
 
-
 ---
-
-
-
 
 Produire le Stream
 

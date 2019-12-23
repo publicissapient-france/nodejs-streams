@@ -120,7 +120,7 @@ readable.on('readable', () => {
 expect(readable.isPaused()).toBeTruthy();
 ```
 
-Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode public `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
+Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode publique `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
 
 > En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull notifications" d'une API Rest.
 
@@ -136,13 +136,13 @@ Si vous avez survécu à cette première partie, sachez que vous avez passé le 
 
 ## Les Streams Writable
 
-Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les nouveaux chunks qui lui sont poussés ainsi que la taille de son Buffer interne. La propriété `writableLength` permet de récupérer la taille du Buffer interne.
+Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les chunks qui lui sont poussés ainsi que la taille de son Buffer interne.
 
-Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write()`, qui a une signature bien précise. La méthode `_write(chunk, encoding, next)` à pour rôle de traiter chaque `chunk` reçu et d'appeler la méthode `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write(chunk, encoding, next)` avec une signature bien précise. Cette méthode à pour rôle de traiter le `chunk` reçu et d'appeler la fonction `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
 
-Si le consommateur pousse un nouveau chunk avant que le traitement du précédent ne soit terminé alors le nouveau chunk est stocké dans le Buffer interne. En d'autres termes, le Stream "Writable" traite les données une par une dans l'ordre d'arrivée de manière séquentielle, préservant ainsi l'ordre des Streams.
+La propriété `writableLength` permet de récupérer la taille du Buffer interne.
 
-> Pour la partie logging, vous allez utiliser le package NPM [log-update](https://www.npmjs.com/package/log-update), qui comme son nom l'indique, permet d'afficher puis mettre à jour un texte dans la console, sans changer de ligne.
+> Pour le logging, vous allez utiliser le package NPM [log-update](https://www.npmjs.com/package/log-update), qui  permet comme son nom l'indique d'afficher puis mettre à jour un texte dans la console, sans changer de ligne. Plutôt pratique pour notre besoin !
 
 ```ts
 import logUpdate from 'log-update';
@@ -158,12 +158,71 @@ class WritableLogger extends Writable {
 
 Le consommateur de votre Stream ne doit pas appeler la méthode `_write()`, considérée privée. C'est Node.js qui va l'appeler pour lui, au moment opportun, autant de fois qu'il le faut.
 
-Pour consommer votre Stream, il faut poussr des chunks en appelant la méthode public `write()` (sans "_").
+Pour consommer votre Stream, il faut pousser des chunks en appelant l'une des méthodes publiques : `write()` (sans "_") ou `end()`. La méthode `write()` peut être appelée plusieurs fois pour pousser des chunks alors que la méthode `end()` ne peut être appelée qu'une seule fois pour terminer le Stream avec un dernier chunk optionnel en paramètre.
+
+La fonction suivante, nommée `feedStream()`, montre comment consommer le Stream, en poussant les chiffres de 1 à 6 à intervalles réguliers de 50ms avant de terminer le Stream.
+
+```ts
+const writable = new WritableLogger();
+
+let data = 0;
+
+function feedStream(): void {
+  data += 1;
+
+  if (data < 6) {
+    writable.write(data.toString());
+    setTimeout(feedStream, 50);
+  } else {
+    writable.end(data.toString());
+  }
+}
+
+feedStream();
+```
+
+De prime abord, le cycle de vie du Stream est assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write()`.
+
+Mais cette première implémentation comporte un défaut ! Car il est important de noter que la méthode `write()` retourne en fait un boolean, que nous n'avons pas exploité et dont le rôle est pourtant primordiale !
+
+Pour comprendre son rôle, attardons-nous sur la méthode `_write()`.
 
 ### Séquence des appels à `_write()`
 
-___
+Un Stream "Writable" traite les chunks un par un dans l'ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks.
 
+C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne.
+
+Mais le Buffer interne a une taille bien définie (appellée `highWaterMark`). C'est lorsque que cette limite est atteinte que la méthode `write()` retourne `false`, pour indiquer au consommateur que, temporairement, il ne doit plus pousser de nouveaux chunks. Ce temps mort, permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Une fois le Buffer vidée, le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
+
+On peut modifier la fonction `feedStream()` pour tenir compte de cette contrainte.
+
+```ts
+const writable = new WritableLogger();
+
+let data = 0;
+
+function feedStream(): void {
+  data += 1;
+
+  if (data < 6) {
+    const isWritable = writable.write(data.toString());
+
+    if (isWritable) {
+      setTimeout(feedStream, 50);
+    } else {
+      writable.once('drain', feedStream);
+    }
+  } else {
+    writable.end(data.toString());
+  }
+}
+
+feedStream();
+```
+
+
+---
 
 
 

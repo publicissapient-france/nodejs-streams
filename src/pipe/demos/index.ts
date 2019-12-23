@@ -1,3 +1,5 @@
+import { pipeline } from 'stream';
+
 import ReadableCounter from '../../readable/counter';
 import WritableLogger from '../../writable/logger';
 
@@ -9,4 +11,14 @@ const writable = new WritableLogger(50);
 writable.speed = 200;
 writable.logEnabled = true;
 
-readable.pipe(writable);
+/*
+// Méthode classique
+readable.on('error', logError).pipe(writable.on('error', logError));
+*/
+
+// Nouvelle méthode avec erreurs mutualisées (à partir de node 10)
+pipeline(readable, writable).on('error', logError);
+
+function logError(err: Error): void {
+  console.error(err);
+}

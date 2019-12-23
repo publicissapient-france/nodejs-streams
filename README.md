@@ -6,9 +6,9 @@ Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Nod
 
 Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP Request/Response`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
 
-Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres packages NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment (à vérifier)... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
+Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres paquets NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment (à vérifier)... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
-__Dans cet article, je vais vous expliquer en détail le fonctionnement interne des Streams "Readable" et "Writable" et vous serez tout à fait à l'aise pour en implémenter et en consommer.__
+__Dans cet article, je vais vous expliquer en détail le fonctionnement interne des Streams "Readable" et "Writable" pour que vous soyez vraiment à l'aise pour en implémenter et en consommer.__
 
 Et pour que tout cela soit vraiment fun, je vais utiliser [TypeScript](https://www.typescriptlang.org) comme langage de programmation et [Jest](https://jestjs.io) comme framework de test.
 
@@ -23,7 +23,7 @@ Un __Stream__ est un flot de données de __taille inconnue__ dont le contenu est
 
 En fait, en interne un Stream utilise justement un Buffer comme zone tampon pour stocker les chunks qu'il détient.
 
-Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
+Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation externe, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
 
 Mais un Stream c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels vous allez pouvoir vous abonner pour le suivre tout au long de son cycle de vie. Par exemple, un Stream "Readable" va emettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
 
@@ -63,13 +63,13 @@ Nous allons revenir sur ce point essentiel un peu plus loin, mais tout d'abord v
 
 ### Les modes "paused" et "flowing"
 
-Un Stream Readable a 2 états possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ces états (et donc même s'il est en mode "paused" !). La méthode `isPaused()` permet de récupérer cet état.
+Un Stream Readable a 2 états (ou modes) possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ces états (et donc même s'il est "paused" !).
 
-A sa création un Stream Readable est en mode "paused".
+A sa création un Stream Readable est en mode "paused" et la méthode `isPaused()` permet de déterminer tout au long de son cycle de vie, le mode dans lequel il opère.
 
 #### En mode "flowing"
 
-Pour consommer un Stream Readable, le plus naturel consiste à le passer en mode "flowing" pour qu'il commence à émettre des chunks.
+Pour consommer un Stream Readable, le plus simple consiste à le passer en mode "flowing" pour qu'il commence à émettre des chunks.
 
 Pour cela, le consommateur doit se mettre à l'écoute des événements `"data"` comme ceci :
 
@@ -97,9 +97,9 @@ readable.resume();
 expect(readable.isPaused()).toBeFalsy();
 ```
 
-Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks sont bel et bien émis mais dans le même temps perdus, puisque personne ne les récupère.
+Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks sont bel et bien émis mais du même coup perdus, puisque personne ne les récupère.
 
-En mode "flowing", le Stream se comporte en réalité comme un simple EventEmitter et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut.
+En mode "flowing", le Stream se comporte en réalité comme un simple `EventEmitter` et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut.
 
 #### En mode "paused"
 
@@ -122,7 +122,7 @@ expect(readable.isPaused()).toBeTruthy();
 
 Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode publique `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
 
-> En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull notifications" d'une API Rest.
+> En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull data" d'une API Rest.
 
 Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle appelée par Node.js ?
 
@@ -130,23 +130,23 @@ Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle a
 
 La méthode `_read()` est appelée pour la première fois lorsque le consommateur se met à l'écoute des événements `"data"` ou `"readable"` (ou suite à l'appel de la méthode `resume()`).
 
-Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
+Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Dès que ce contrat est rempli, Node.js rappelle automatiquement la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
-En résumé, retenez que `_read()` se doit d'appeler `push()`, qui à priori (par l'intermédiaire de Node.js) rappelle `_read()`. Je dis "à priori" car il y a un cas où les choses se passent un peu différemment. Car en effet, une question subsiste ! Que va-t-il se passer si votre Stream emet des chunks plus vite qu'ils ne sont consommés ? C'est ce que nous allons analyser maintenant.
+Cependant, il existe un cas où les choses ne se passent pas exactement ainsi. Mais avant de l'aborder, il nous faut répondre à la question suivante : Que se passe-t-il lorsque votre Stream emet des chunks plus vite qu'ils ne sont consommés ?
 
-### La taille limite du Buffer interne
+### La taille du Buffer interne
 
-Vous avez compris qu'en mode "paused", la méthode `push(chunk)` (niveau _implémentation_ interne) permet l'envoi des chunks au Buffer interne, en vue de leur consommation opérée par la méthode `read()` (niveau _consommation_ externe).
+Vous avez compris qu'en mode "paused", la méthode `push(chunk)` permet l'envoi des chunks au Buffer interne, en vue de leur consommation opérée par la méthode `read()`.
 
-Vous devez savoir que la méthode `push()` retourne un boolean et ce, pour une bonne raison.
+Vous devez savoir que la méthode `push()` retourne un boolean, normalement `true` lorsque que tout va bien.
 
-Si les chunks ne sont pas consommés assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `push()` retourne `false`, pour indiquer à l'implémentation du Stream de ne plus envoyer de chunks.
+Mais, si les chunks ne sont pas consommés assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `push()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de chunks supplémentaires (c'est-à-dire ne plus appeler la méthode `push()`).
 
-A ce stade, le Stream reste à l'arrêt jusqu'à ce que le consommateur vide le Buffer interne. Lorsque ce dernier est vidé, Node.js rappelle automatiquement la méthode `_read()` pour relancer le Stream.
+A ce stade, le Stream reste à l'arrêt jusqu'à ce que le consommateur parvienne à vider le Buffer interne. Et c'est à ce moment là, que Node.js va rappeller automatiquement la méthode `_read()` pour relancer le Stream.
 
-En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, Node.js l'appel est différé au moment où le Buffer interne est vidé.
+En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé.
 
-A noter que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la class `Readable`.
+A noter que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
 
 ```ts
 class ReadableCounter extends Readable {
@@ -162,11 +162,11 @@ class ReadableCounter extends Readable {
 
 Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les chunks qui lui sont poussés ainsi que la taille de son Buffer interne.
 
-Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write(chunk, encoding, next)` avec une signature bien précise. Cette méthode à pour rôle de traiter le `chunk` reçu et d'appeler la fonction `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write(chunk, encoding, next)` avec cette signature bien précise. Cette méthode à pour rôle de traiter le `chunk` reçu et d'appeler la fonction `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
 
 La propriété `writableLength` permet de récupérer la taille du Buffer interne.
 
-> Pour le logging, vous allez utiliser le package NPM [log-update](https://www.npmjs.com/package/log-update), qui  permet comme son nom l'indique d'afficher puis mettre à jour un texte dans la console, sans changer de ligne. Plutôt pratique pour notre besoin !
+> Pour le logging, vous allez utiliser le paquet NPM [log-update](https://www.npmjs.com/package/log-update), qui permet comme son nom l'indique, d'afficher puis mettre à jour un texte dans la console, sans changer de ligne. Plutôt pratique pour notre besoin !
 
 ```ts
 import logUpdate from 'log-update';
@@ -184,7 +184,7 @@ Le consommateur de votre Stream ne doit pas appeler la méthode `_write()`, cons
 
 Pour consommer votre Stream, il faut pousser des chunks en appelant l'une des méthodes publiques : `write()` (sans "_") ou `end()`. La méthode `write()` peut être appelée plusieurs fois pour pousser des chunks alors que la méthode `end()` ne peut être appelée qu'une seule fois pour terminer le Stream avec un dernier chunk optionnel en paramètre.
 
-La fonction suivante, nommée `feedStream()`, montre comment consommer le Stream, en poussant les chiffres de 1 à 6 à intervalles réguliers de 50ms avant de terminer le Stream.
+La fonction suivante, nommée `feedStream()`, montre comment consommer votre Stream, en poussant les chiffres de 1 à 6 à intervalles réguliers de 50ms avant de terminer le Stream.
 
 ```ts
 const writable = new WritableLogger();
@@ -205,21 +205,17 @@ function feedStream(): void {
 feedStream();
 ```
 
-De prime abord, le cycle de vie du Stream est assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write()`.
-
-Mais cette première implémentation comporte un défaut ! Car il est important de noter que la méthode `write()` retourne un boolean, que nous n'avons pas exploité et dont le rôle est pourtant primordiale !
-
-Pour comprendre son rôle, attardons-nous sur la méthode `_write()`.
+L'enchaînement est donc assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write(chunk)`. Cependant, il faut savoir que la méthode `write()` retourne un boolean, en général `true` quand tout va bien. Voyons maintenant dans quel cas cette méthode retourne `false` et comment en tenir compte dans notre implémentation.
 
 ### Séquence des appels à `_write()`
 
-Un Stream "Writable" traite les chunks un par un dans l'ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks.
+Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks. C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne du Stream.
 
-C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne.
+Mais, si les chunks ne sont pas traités assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `write()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de chunks supplémentaires (c'est-à-dire ne plus appeler la méthode `write()`).
 
-Mais le Buffer interne possède une taille limitée, appellée `highWaterMark`. C'est lorsque que cette limite est atteinte que la méthode `write()` retourne `false`, pour indiquer au consommateur que, temporairement, il ne doit plus pousser de nouveaux chunks. Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Une fois le Buffer interne vidé, le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
+Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Et c'est à ce moment là, le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
 
-On peut modifier la fonction `feedStream()` pour tenir compte de cette contrainte.
+Vous pouvez modifier la fonction `feedStream()` pour tenir compte de cette contrainte.
 
 ```ts
 const writable = new WritableLogger();

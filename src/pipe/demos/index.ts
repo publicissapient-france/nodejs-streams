@@ -12,11 +12,13 @@ writable.speed = 200;
 writable.logEnabled = true;
 
 /*
-// Méthode classique
-readable.on('error', logError).pipe(writable.on('error', logError));
+// Méthode classique avec gestion distincte des erreurs
+readable.on('error', logError);
+writable.on('error', logError);
+readable.pipe(writable);
 */
 
-// Nouvelle méthode avec erreurs mutualisées (à partir de node 10)
+// Nouvelle méthode avec gestion mutualisée des erreurs (à partir de node 10)
 pipeline(readable, writable).on('error', logError);
 
 function logError(err: Error): void {

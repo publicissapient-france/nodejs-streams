@@ -4,7 +4,7 @@
 
 Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Node.js](https://nodejs.org/) !
 
-Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP Request/Response`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
+Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `TCP Socket`, `fs read`, `zlib` et `crypto`, implémentent tous l'interface Streams.
 
 Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres paquets NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment (à vérifier)... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
@@ -271,18 +271,21 @@ import { pipeline } from 'stream';
 const readable = new ReadableCounter();
 const writable = new WritableLogger();
 
-readable.on('error', logError).pipe(writable.on('error', logError));
+readable.on('error', logError);
+writable.on('error', logError);
+
+readable.pipe(writable);
 
 function logError(err: Error): void {
   console.error(err);
 }
 ```
 
-Mais dans ce cas, vous devez gérer les erreurs pour chaque Stream séparément.
+Mais dans ce cas, vous devez gérer les erreurs pour chaque Stream séparément. Si vous écrivez quelque chose comme `readable.pipe(writable).on('error', logError)` vous n'attraperai que les erreurs de `writable`.
 
 ### La fonction `pipeline()`
 
-La seconde plus moderne, permet de mutualiser la gestion des erreurs à un seul endroit pour tous les Streams.
+La seconde plus moderne, permet de mutualiser les erreurs des deux Streams pour les gérer en un seul endroit.
 
 ```ts
 import { pipeline } from 'stream';

@@ -15,17 +15,17 @@ Et pour que tout cela soit vraiment fun, je vais utiliser [TypeScript](https://w
 Les exemples de code de cet article sont disponibles dans le dépôt Git suivant :
 [https://github.com/xebia-france/nodejs-streams](https://github.com/xebia-france/nodejs-streams).
 
-Mais avant de coder, commonçons par définir ce qu'est un Stream.
+Mais avant de coder, commençons par définir ce qu'est un Stream.
 
 ## Mais alors un Stream c'est quoi ?
 
-Un __Stream__ est un flot de données de __taille inconnue__ dont le contenu est accessible par paquets ("chunk" en anglais) au fil du temps de manière __asynchrone__. On peut l'opposer au Buffer. Un __Buffer__ est un bloc de données de __taille connue__ à l'avance et dont le contenu est accessible de manière __synchrone__.
+Un __Stream__ est un flot de données de __taille inconnue__ dont le contenu est accessible par paquets ("chunk" en anglais) au fil du temps, de manière __asynchrone__. On peut l'opposer au Buffer. Un __Buffer__ est un bloc de données de __taille connue__ à l'avance et dont le contenu est accessible de manière __synchrone__.
 
 En fait, en interne un Stream utilise justement un Buffer comme zone tampon pour stocker les chunks qu'il détient.
 
 Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation externe, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
 
-Mais un Stream c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels vous allez pouvoir vous abonner pour le suivre tout au long de son cycle de vie. Par exemple, un Stream "Readable" va emettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
+Mais un Stream c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels vous allez pouvoir vous abonner pour le suivre tout au long de son cycle de vie. Par exemple, un Stream "Readable" va émettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
 
 En résumé, l'équation est assez simple :
 __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.org/api/events.html) = [Stream](https://nodejs.org/api/stream.html)__.
@@ -36,7 +36,7 @@ Après cette introduction, passons à la pratique.
 
 Pour cette partie, vous allez implémenter un Stream nommé `ReadableCounter` qui émet des nombres de 1 à 6 puis se termine.
 
-Pour cela, vous devez créer une classe enfant qui hérite de la classe `Readable`, dont le contrat d'interface vous demande d'implémenter la méthode `_read()`. La méthode `_read()` à pour rôle d'émettre des chunks en appelant au moins une fois la méthode `push(chunk)` de manière synchrone ou asynchrone. Et pour terminer le Stream, vous devez appeler la méthode `push` avec `null` en paramètre comme ceci: `push(null)`.
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Readable`, dont le contrat d'interface vous demande d'implémenter la méthode `_read()`. La méthode `_read()` a pour rôle d'émettre des chunks en appelant au moins une fois la méthode `push(chunk)` de manière synchrone ou asynchrone. Et pour terminer le Stream, vous devez appeler la méthode `push` avec `null` en paramètre comme ceci: `push(null)`.
 
 ```ts
 import { Readable } from 'stream';
@@ -65,7 +65,7 @@ Nous allons revenir sur ce point essentiel un peu plus loin, mais tout d'abord v
 
 Un Stream Readable a 2 modes de fonctionnement possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ces modes (et donc même s'il est "paused" !).
 
-A sa création un Stream Readable est en mode "paused". La méthode `isPaused()` permet de déterminer tout au long de son cycle de vie, le mode dans lequel il opère.
+A sa création, un Stream Readable est en mode "paused". La méthode `isPaused()` permet de déterminer tout au long de son cycle de vie, le mode dans lequel il opère.
 
 #### En mode "flowing"
 
@@ -120,7 +120,7 @@ readable.on('readable', () => {
 expect(readable.isPaused()).toBeTruthy();
 ```
 
-Cette fois, le Stream emet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode publique `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
+Cette fois, le Stream émet les chunks en les stockant dans son Buffer interne. C'est au consommateur d'appeler la méthode publique `read()` (sans "_") de manière synchrone pour tirer la donnée jusqu'à vider le Buffer interne.
 
 > En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull data" d'une API Rest.
 
@@ -132,7 +132,7 @@ La méthode `_read()` est appelée pour la première fois lorsque le consommateu
 
 Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Dès que ce contrat est rempli, Node.js rappelle automatiquement la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
-Cependant, il existe un cas où les choses ne se passent pas exactement ainsi. Mais avant de l'aborder, il nous faut répondre à la question suivante : Que se passe-t-il lorsque votre Stream emet des chunks plus vite qu'ils ne sont consommés ?
+Cependant, il existe un cas où les choses ne se passent pas exactement ainsi. Mais avant de l'aborder, il nous faut répondre à la question suivante : Que se passe-t-il lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés ?
 
 ### La taille du Buffer interne
 
@@ -162,7 +162,7 @@ class ReadableCounter extends Readable {
 
 Pour cette partie, vous allez implémenter un Stream nommé `WritableLogger` qui affiche en temps réel, les chunks qui lui sont poussés ainsi que la taille de son Buffer interne.
 
-Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write(chunk, encoding, next)` avec cette signature bien précise. Cette méthode à pour rôle de traiter le `chunk` reçu et d'appeler la fonction `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
+Pour cela, vous devez créer une classe enfant qui hérite de la classe `Writable`, dont le contrat d'interface vous demande d'implémenter la méthode `_write(chunk, encoding, next)` avec cette signature bien précise. Cette méthode a pour rôle de traiter le `chunk` reçu et d'appeler la fonction `next()` à l'issue de ce traitement, qui peut prendre plus ou moins de temps.
 
 La propriété `writableLength` permet de déterminer tout au long de son cycle de vie, la taille du Buffer interne.
 
@@ -213,7 +213,7 @@ Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de maniè
 
 Mais, si les chunks ne sont pas traités assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `write()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de nouveaux chunks (c'est-à-dire ne plus appeler la méthode `write()`).
 
-Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Et c'est à ce moment là, que le Stream emet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
+Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Et c'est à ce moment là, que le Stream émet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
 
 Vous pouvez modifier la fonction `feedStream()` pour tenir compte de cette règle.
 
@@ -241,7 +241,7 @@ function feedStream(): void {
 feedStream();
 ```
 
-> Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter avec la méthode `pipe()` ou la fonction `pipline()`.
+> Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter avec la méthode `pipe()` ou la fonction `pipeline()`.
 
 ## Connecter les Streams "Readable" et "Writable"
 
@@ -251,7 +251,7 @@ Mais avant de rentrer dans le détail, profitons de l'occasion pour parler de la
 
 ### Gestion des erreurs
 
-Lorsqu'une erreur se produit dans un Stream "Readable" ou "Writable", celui-ci emet l'événement `"error"` auxquel il est fortement conseillé de s'abonner pour un code robuste.
+Lorsqu'une erreur se produit dans un Stream "Readable" ou "Writable", celui-ci émet l'événement `"error"` auquel il est fortement conseillé de s'abonner pour un code robuste.
 
 ```ts
 someStream.on('error', logError);

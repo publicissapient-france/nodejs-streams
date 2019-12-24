@@ -2,9 +2,8 @@ import { createReadStream, readFile } from 'fs';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { resolve } from 'path';
 
-const port = 8080;
-createServer(requestListener).listen(port);
-console.log(`\nServer listening on port: ${port}`);
+createServer(requestListener).listen(8080);
+console.log('\nServer listening on port: 8080');
 
 function requestListener(req: IncomingMessage, res: ServerResponse): void {
   switch (req.url) {

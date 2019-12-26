@@ -19,7 +19,7 @@ Mais avant de coder, commençons par définir ce qu'est un Stream.
 
 ## Mais alors un Stream c'est quoi ?
 
-Un __Stream__ est un flot de données de __taille inconnue__ dont le contenu est accessible par paquets ("chunk" en anglais) au fil du temps, de manière __asynchrone__. On peut l'opposer au Buffer. Un __Buffer__ est un bloc de données de __taille connue__ à l'avance et dont le contenu est accessible de manière __synchrone__.
+Un __Stream__ c'est un flot de données de __taille inconnue__ dont le contenu est accessible par paquets ("chunk" en anglais) au fil du temps, de manière __asynchrone__. On peut l'opposer au Buffer. Un __Buffer__ est un bloc de données de __taille connue__ à l'avance et dont le contenu est accessible de manière __synchrone__.
 
 En fait, en interne un Stream utilise justement un Buffer comme zone tampon pour stocker les chunks qu'il détient.
 
@@ -99,7 +99,7 @@ expect(readable.isPaused()).toBeFalsy();
 
 Notez qu'avec uniquement `resume()`, comme dans l'exemple ci-dessus, les chunks sont bel et bien émis mais du même coup perdus, puisque personne ne les récupère.
 
-En mode "flowing", le Stream se comporte en réalité comme un simple `EventEmitter` et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut.
+En mode "flowing", le Stream se comporte en réalité comme un simple `EventEmitter` et les chunks émis ne transitent pas vraiment par le Buffer interne dont je vous ai parlé plus haut. Voyons maintenant le mode "paused" qui va quant à lui pleinement exploiter ce fameux Buffer.
 
 #### En mode "paused"
 
@@ -130,23 +130,35 @@ Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle a
 
 La méthode `_read()` est appelée pour la première fois lorsque le consommateur se met à l'écoute des événements `"data"` ou `"readable"` (ou suite à l'appel de la méthode `resume()`).
 
-Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Dès que ce contrat est rempli, Node.js rappelle automatiquement la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
+Le contrat de la méthode `_read()` est comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle immédiatement la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce "cercle vertueux" n'est interrompu que lorsque vous appelez `push(null)` pour indiquer que le Stream est terminé.
 
-Cependant, il existe un cas où les choses ne se passent pas exactement ainsi. Mais avant de l'aborder, il nous faut répondre à la question suivante : Que se passe-t-il lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés ?
+Cependant, il existe un cas où Node.js va diférrer le rappel de la méthode `_read()`. Pour aborder ce cas, nous devons comprendre ce qui se passe, lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés. Allons-y !
 
-### La taille du Buffer interne
+D'un côté, dans l'implémentation de votre Stream, vous appelez la méthode `push()` pour remplir le Buffer interne avec des chunks. Et de l'autre côté, le consommateur de votre Stream appelle la méthode publique `read()` pour récupérer ces chunks et vider le Buffer interne. Mais si les chunks ne sont pas consommés assez vite, le Buffer interne va alors progressivement se remplir jusqu'à atteindre sa limite, appelée `highWaterMark`.
 
-Vous l'avez compris, en mode "paused" la méthode `push(chunk)` permet l'envoi des chunks au Buffer interne, en vue de leur consommation opérée par la méthode `read()`.
+Lorsque cela se produit, Node.js casse le fameux "cercle vertueux" dont je vous ai parlé plus haut, en ne rappelant pas la méthode `_read()` à la suite à votre appel à `push()`. Le Stream reste ainsi à l'arrêt, jusqu'à ce que le consommateur parvienne à vider le Buffer interne, à son rythme. Et c'est seulement alors, que Node.js rappelle enfin la méthode `_read()` pour relancer le Stream et demander de nouveaux chunks à votre implémentation.
 
-Vous devez savoir que la méthode `push()` retourne un boolean, normalement `true` lorsque que tout va bien.
+Pour vous permettre de prendre en compte de ce comportement, la méthode `push()` retourne un boolean. Et `push(chunk)` va retourner `false` pour le `chunk` qui entraine le dépassement de la taille limite du Buffer interne.
 
-Mais, si les chunks ne sont pas consommés assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `push()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de nouveaux chunks (c'est-à-dire ne plus appeler la méthode `push()`).
+Cela est très utile si par exemple vous appelez la méthode `push()` plusieurs fois dans l'implémentation de votre méthode `_read()`, comme ceci :
 
-A ce stade, le Stream reste à l'arrêt jusqu'à ce que le consommateur parvienne à vider le Buffer interne. Et c'est à ce moment là, que Node.js va rappeller automatiquement la méthode `_read()` pour relancer le Stream.
+```ts
+class ReadableCounter extends Readable {
+  _read() {
+    for (let i = 0; i < 10, i++) {
+      if (!this.push('some chunk')) {
+        break;
+      }
+    }
+  }
+}
+```
+
+Comprenez bien que ce comportement à pour but de vous permettre de réguler votre Stream, mais que cette régulation n'est pas stricte. Car même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a déjà été dépassé, Node.js ne lévera pas d'erreurs.
 
 En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé.
 
-A noter que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
+Notez que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
 
 ```ts
 class ReadableCounter extends Readable {

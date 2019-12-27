@@ -4,80 +4,83 @@ import WritableLogger from './logger';
 
 jest.mock('log-update');
 
-test('WritableLogger .write() should call .next()', () => {
-  jest.useFakeTimers();
+describe('WritableLogger', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
 
-  const stream = new WritableLogger();
+  test('.write() should call .next()', () => {
+    const stream = new WritableLogger();
 
-  const nextMock = jest.fn();
+    const nextMock = jest.fn();
 
-  stream.write('A', 'utf8', nextMock);
-  jest.runOnlyPendingTimers();
+    stream.write('A', 'utf8', nextMock);
+    jest.runOnlyPendingTimers();
 
-  stream.write('B', 'utf8', nextMock);
-  stream.write('C', 'utf8', nextMock);
-  stream.write('D', 'utf8', nextMock);
-  stream.write('E', 'utf8', nextMock);
-  jest.runOnlyPendingTimers();
-  jest.runOnlyPendingTimers();
-  jest.runOnlyPendingTimers();
-  jest.runOnlyPendingTimers();
+    stream.write('B', 'utf8', nextMock);
+    stream.write('C', 'utf8', nextMock);
+    stream.write('D', 'utf8', nextMock);
+    stream.write('E', 'utf8', nextMock);
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
 
-  stream.write('F', 'utf8', nextMock);
-  jest.runOnlyPendingTimers();
+    stream.write('F', 'utf8', nextMock);
+    jest.runOnlyPendingTimers();
 
-  expect(nextMock).toHaveBeenCalledTimes(6);
+    expect(nextMock).toHaveBeenCalledTimes(6);
 
-  expect(logUpdateMock).toHaveBeenNthCalledWith(1, logUpdateOutputMock(0, 'A'));
-  expect(logUpdateMock).toHaveBeenNthCalledWith(2, logUpdateOutputMock(3, 'B'));
-  expect(logUpdateMock).toHaveBeenNthCalledWith(3, logUpdateOutputMock(2, 'C'));
-  expect(logUpdateMock).toHaveBeenNthCalledWith(4, logUpdateOutputMock(1, 'D'));
-  expect(logUpdateMock).toHaveBeenNthCalledWith(5, logUpdateOutputMock(0, 'E'));
-  expect(logUpdateMock).toHaveBeenNthCalledWith(6, logUpdateOutputMock(0, 'F'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(1, logUpdateOutputMock(0, 'A'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(2, logUpdateOutputMock(3, 'B'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(3, logUpdateOutputMock(2, 'C'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(4, logUpdateOutputMock(1, 'D'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(5, logUpdateOutputMock(0, 'E'));
+    expect(logUpdateMock).toHaveBeenNthCalledWith(6, logUpdateOutputMock(0, 'F'));
+  });
 
-  jest.useRealTimers();
-});
+  test('.write() should return false when highWaterMark reached', () => {
+    const highWaterMark = 3;
+    const stream = new WritableLogger(highWaterMark);
 
-test('WritableLogger .write() should return false when highWaterMark reached', () => {
-  jest.useFakeTimers();
+    const isWritable = [stream.write('A'), stream.write('B'), stream.write('C')];
 
-  const highWaterMark = 3;
-  const stream = new WritableLogger(highWaterMark);
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
 
-  const isWritable = [stream.write('A'), stream.write('B'), stream.write('C')];
+    expect(isWritable).toEqual([true, true, false]);
+  });
 
-  jest.runOnlyPendingTimers();
-  jest.runOnlyPendingTimers();
-  jest.runOnlyPendingTimers();
+  test('should emit "drain" event when writable again', () => {
+    const highWaterMark = 3;
+    const stream = new WritableLogger(highWaterMark);
 
-  expect(isWritable).toEqual([true, true, false]);
+    const drainMock = jest.fn();
+    stream.on('drain', drainMock);
 
-  jest.useRealTimers();
-});
+    stream.write('A');
+    stream.write('B');
+    stream.write('C');
 
-test('WritableLogger should emit "drain" event when writable again', () => {
-  jest.useFakeTimers();
+    jest.runOnlyPendingTimers();
+    expect(drainMock).not.toHaveBeenCalled();
 
-  const highWaterMark = 3;
-  const stream = new WritableLogger(highWaterMark);
+    jest.runOnlyPendingTimers();
+    expect(drainMock).not.toHaveBeenCalled();
 
-  const drainMock = jest.fn();
-  stream.on('drain', drainMock);
+    jest.runOnlyPendingTimers();
+    expect(drainMock).toHaveBeenCalled();
+  });
 
-  stream.write('A');
-  stream.write('B');
-  stream.write('C');
+  test('with log disabled', () => {
+    const stream = new WritableLogger();
+    stream.logEnabled = false;
 
-  jest.runOnlyPendingTimers();
-  expect(drainMock).not.toHaveBeenCalled();
+    stream.write('A');
+    jest.runOnlyPendingTimers();
 
-  jest.runOnlyPendingTimers();
-  expect(drainMock).not.toHaveBeenCalled();
-
-  jest.runOnlyPendingTimers();
-  expect(drainMock).toHaveBeenCalled();
-
-  jest.useRealTimers();
+    expect(logUpdateMock).not.toHaveBeenCalled();
+  });
 });
 
 function logUpdateOutputMock(writeableLength: number, chunk: string): string {

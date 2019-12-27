@@ -9,8 +9,7 @@
     "lint": "eslint --ext .ts src/",
     "test": "jest",
     "build": "tsc",
-    "prod": "node dist/index",
-    "dev": "ts-node src/index"
+    "ts": "ts-node"
   },
   "repository": {
     "type": "git",

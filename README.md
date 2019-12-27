@@ -1,6 +1,6 @@
 # Implémenter et consommer les Streams "Readable" et "Writable" de Node.js
 
-![Streams](./img/stream.jpg)
+![Streams](./stream.jpg)
 
 Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Node.js](https://nodejs.org/) !
 

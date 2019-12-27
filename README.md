@@ -21,9 +21,13 @@ Mais avant de coder, commençons par définir ce qu'est un Stream.
 
 Un __Stream__, c'est un flot de données de __taille inconnue__, dont le contenu est accessible par paquets ("chunk" en anglais) au fil du temps, de manière __asynchrone__. On peut l'opposer au Buffer. Un __Buffer__ est un bloc de données de __taille connue__ à l'avance et dont le contenu est accessible de manière __synchrone__.
 
+Prenons un exemple.
+
+Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement avant de commencer la lecture. A contrario, la lire en Streaming vous permet de commencer la lecture presque immédiatement, dès que les premiers chunks ont été téléchargés. En d'autres termes, dans un Buffer, une donnée incomplète est une donnée corrompue et n'est donc pas exploitable, alors que dans un Stream, la donnée est consultée dans une fenêtre temporelle et est donc par nature, incomplète à chaque instant.
+
 En fait, en interne, un Stream utilise justement un Buffer comme zone tampon, pour stocker les chunks qu'il détient.
 
-Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation externe, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, vous pouvez pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
+Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation externe, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, on peut pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
 
 Mais un Stream, c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels vous allez pouvoir vous abonner pour le suivre, tout au long de son cycle de vie. Par exemple, un Stream "Readable" va émettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
 
@@ -134,7 +138,7 @@ Le contrat de la méthode `_read()` est, comme nous l'avons dit plus haut, d'app
 
 Cependant, il existe un cas où Node.js va diférrer le rappel de la méthode `_read()`. Pour aborder ce cas, nous devons comprendre ce qui se passe, lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés. Allons-y !
 
-D'un côté, dans l'implémentation de votre Stream, vous appelez la méthode `push()` pour remplir le Buffer interne avec des chunks. Et de l'autre côté, le consommateur de votre Stream appelle la méthode publique `read()` pour récupérer ces chunks et vider le Buffer interne. Mais si les chunks ne sont pas consommés assez vite, le Buffer interne va alors progressivement se remplir jusqu'à atteindre sa limite de taille, appelée `highWaterMark`.
+D'un côté, dans l'implémentation de votre Stream, vous appelez la méthode `push()` pour remplir le Buffer interne avec des chunks. Et de l'autre côté, le consommateur de votre Stream appelle la méthode publique `read()` pour récupérer ces chunks et vider le Buffer interne. Mais si les chunks ne sont pas consommés assez vite, le Buffer interne va alors progressivement se remplir jusqu'à atteindre sa taille limite, appelée `highWaterMark`.
 
 Lorsque cela se produit, Node.js casse le fameux cercle "vertueux" dont je vous ai parlé plus haut en ne rappelant pas `_read()` suite à votre appel à `push()`. Le Stream reste ainsi à l'arrêt, jusqu'à ce que le consommateur parvienne à vider le Buffer interne, à son rythme. Et c'est seulement alors, que Node.js rappelle enfin la méthode `_read()`, pour relancer le Stream et demander de nouveaux chunks à votre implémentation.
 
@@ -223,7 +227,7 @@ L'enchaînement est donc assez simple : lorsque le consommateur appelle la méth
 
 Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks. C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne du Stream.
 
-Mais, si les chunks ne sont pas traités assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `write()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de nouveaux chunks (c'est-à-dire ne plus appeler la méthode `write()`).
+Mais, si les chunks ne sont pas traités assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa taille limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `write()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de nouveaux chunks (c'est-à-dire ne plus appeler la méthode `write()`).
 
 Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Et c'est à ce moment là, que le Stream émet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
 

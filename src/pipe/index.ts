@@ -13,14 +13,14 @@ writable.logEnabled = true;
 
 /*
 // Méthode classique avec gestion distincte des erreurs
-readable.on('error', logError);
-writable.on('error', logError);
+readable.on('error', (err: Error) => console.error(err));
+writable.on('error', (err: Error) => console.error(err));
 readable.pipe(writable);
 */
 
 // Nouvelle méthode avec gestion mutualisée des erreurs (à partir de node 10)
-pipeline(readable, writable).on('error', logError);
-
-function logError(err: Error): void {
-  console.error(err);
-}
+pipeline(readable, writable, (err: Error | null) => {
+  if (err) {
+    console.error(err);
+  }
+});

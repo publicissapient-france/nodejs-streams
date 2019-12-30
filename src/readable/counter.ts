@@ -27,12 +27,16 @@ export default class ReadableCounter extends Readable {
   }
 
   private pushDataBatch(): void {
-    const batchSize = Math.min(this.batchSize, this.dataLimit - this.data + 1);
+    const batchSize = this.getBatchSize();
     for (let i = 0; i < batchSize; i += 1) {
       if (!this.pushData()) {
-        return;
+        break;
       }
     }
+  }
+
+  private getBatchSize(): number {
+    return Math.min(this.batchSize, this.dataLimit - this.data + 1);
   }
 
   private pushData(): boolean {

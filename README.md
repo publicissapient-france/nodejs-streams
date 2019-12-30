@@ -27,7 +27,7 @@ Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement ava
 
 En fait, en interne, un Stream utilise justement un Buffer comme zone tampon, pour stocker les chunks qu'il détient.
 
-Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation externe, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, on peut pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
+Lorsqu'un Stream produit des chunks, qu'il stocke donc dans son Buffer interne en vue de leur consommation par l'extérieur, on dit que ce Stream est accessible en lecture (ou "Readable"). Et lorsque depuis l'extérieur, on peut pousser des chunks dans le Buffer interne d'un Stream en vue de leur traitement, on dit que ce Stream est accessible en écriture (ou "Writable").
 
 Mais un Stream, c'est aussi un émetteur d'événements (ou "EventEmitter"), auxquels vous allez pouvoir vous abonner pour le suivre, tout au long de son cycle de vie. Par exemple, un Stream "Readable" va émettre un événement `"readable"`, pour indiquer à celui qui le consomme, que de la donnée est prête à être consommée.
 
@@ -158,7 +158,7 @@ class ReadableCounter extends Readable {
 }
 ```
 
-Comprenez bien que ce comportement à pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lévera pas d'erreurs.
+Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lévera pas d'erreurs.
 
 En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé.
 
@@ -221,17 +221,17 @@ function feedStream(): void {
 feedStream();
 ```
 
-L'enchaînement est donc assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write(chunk)`. Cependant, il faut savoir que la méthode `write()` retourne un boolean, en général `true` quand tout va bien. Voyons maintenant quand et pourquoi cette méthode retourne `false` et comment en tenir compte dans notre implémentation.
+L'enchaînement est donc assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write(chunk)`. Cependant, il faut savoir que la méthode `write()` retourne un boolean, en général `true` quand tout va bien. Voyons maintenant quand et pourquoi cette méthode retourne `false` et comment en tenir compte dans votre implémentation.
 
 ### Séquence des appels à `_write()`
 
-Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks. C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne du Stream.
+Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks. C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne.
 
 Mais, si les chunks ne sont pas traités assez vite, le Buffer interne va alors se remplir progressivement jusqu'à atteindre sa taille limite, appelée `highWaterMark`. Lorsque cela se produit, la méthode `write()` retourne `false`, pour indiquer que temporairement, il ne faut plus envoyer de nouveaux chunks (c'est-à-dire ne plus appeler la méthode `write()`).
 
-Ce délai permet au Stream de traiter les chunks en attente jusqu'à vider son Buffer interne. Et c'est à ce moment là, que le Stream émet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
+Ce délai permet au Stream de traiter les chunks en attente, jusqu'à vider son Buffer interne. Et, une fois son Buffer vidé, le Stream émet l'événement `"drain"` pour indiquer qu'il accepte à nouveau des chunks.
 
-Vous pouvez modifier la fonction `feedStream()` pour tenir compte de cette règle.
+Vous pouvez modifier la fonction `feedStream()` pour tenir compte de ce fonctionnement.
 
 ```ts
 const writable = new WritableLogger();

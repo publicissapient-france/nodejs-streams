@@ -263,11 +263,11 @@ feedStream();
 
 Il y a 2 manières de connecter la sortie d'un Stream "Readable" à l'entrée d'un Stream "Writable". La seconde, plus moderne, est apparue avec Node.js 10 et permet de mutualiser la gestion des erreurs.
 
-Alors avant de vous présenter la syntaxe permettant de connecter les Streams entre-eux, voyons tout d'abord comment gérer les erreurs dans les Streams.
+Alors avant de vous montrer comment s'y prendre, voyons tout d'abord comment gérer les erreurs dans les Streams.
 
 ### Gestion des erreurs
 
-Pour levez une erreur dans un Stream "Readable", vous devez émettre l'événement `"error"`, signifiant ainsi que vous n'avez pas pu produire la donnée :
+Pour lever une erreur dans un Stream "Readable", vous devez émettre l'événement `"error"`, signifiant ainsi que vous n'avez pas pu produire la donnée attendue :
 
 ```ts
 class ReadAndEmitError extends Readable {
@@ -279,7 +279,7 @@ class ReadAndEmitError extends Readable {
 new ReadAndEmitError().on('error', err => console.error(err.message));
 ```
 
-Pour levez une erreur dans un Stream "Writable" et signifier ainsi que vous n'avez pas pu traiter la donnée, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
+Pour lever une erreur dans un Stream "Writable" pour signifier que vous n'avez pas pu traiter la donnée reçue, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
 
 ```ts
 class WriteAndEmitError extends Writable {
@@ -303,25 +303,27 @@ class WriteAndCallNextWithError extends Writable {
 new WriteAndEmitError().on('error', err => console.error(err.message));
 ```
 
-> Pour le consommateur de votre Stream, il est fortement conseillé de s'abonner aux événements `"error"` que votre Stream pourrait éventuellement émettre.
+> Il est fortement conseillé au consommateur de votre Stream, de s'abonner aux événements `"error"`, qui peuvent être émis à n'importe quel moment.
 
 Voyons maintenant comment connecter les Streams entre-eux.
 
 ### La méthode `pipe()`
 
-La manière classique de connecter des Streams, consiste à utiliser la méthode `pipe()` du Stream Readable.
+La manière classique de connecter des Streams consiste à utiliser la méthode `pipe()` du Stream Readable.
 
 ```ts
 const readable = new ReadableCounter();
 const writable = new WritableLogger();
 
-readable.on('error', (err: Error) => console.error(err.message));
-writable.on('error', (err: Error) => console.error(err.message));
-
 readable.pipe(writable);
 ```
 
 Mais de cette manière, le consommateur est obligé de gérer les erreurs de chaque Stream séparément, en s'abonnant aux événements `"error"` pour chacun d'entre-eux.
+
+```ts
+readable.on('error', (err: Error) => console.error(err.message));
+writable.on('error', (err: Error) => console.error(err.message));
+```
 
 Notez que le code suivant, ne produira pas l'effet escompté, car seuls les erreurs du Stream "Writable" seront prises en charge :
 
@@ -331,7 +333,7 @@ readable.pipe(writable).on('error', (err: Error) => console.error(err.message));
 
 ### La fonction `pipeline()`
 
-La manière moderne de connecter des Streams, consiste à utiliser la fonction `pipeline()`, qui permet de mutualiser les erreurs des deux Streams afin de les gérer en un seul endroit.
+La manière moderne de connecter des Streams consiste à utiliser la fonction `pipeline()`, qui permet de mutualiser les erreurs des deux Streams, afin de les gérer en un seul endroit.
 
 ```ts
 import { pipeline } from 'stream';
@@ -341,15 +343,54 @@ const writable = new WritableLogger();
 
 pipeline(readable, writable, (err: Error) => {
   if (err) {
-    // Gère les erreurs en provenance de "readable" et "writable", en un seul endroit !
     console.error(err.message);
   }
 });
 ```
 
+## Optimisation d'un serveur HTTP
+
+Pour conclure cette article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive du serveur.
+
+Pour cela, vous allez utiliser la fonction `createReadStream()` du module `'fs'`, qui permet de créer un Stream "Readable" à partir d'un fichier local.
+
+```ts
+import { createReadStream } from 'fs';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
+
+const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+  if (req.url === '/') {
+    createReadStream('path/to/big/file').pipe(res);
+  } else {
+    res.end();
+  }
+});
+
+server.listen(8080);
+```
+
+Il vous suffit donc d'utliser la méthode `pipe()` pour connecter la lecture du fichier local à la réponse du serveur, qui vous l'avez compris, est un Stream "Writable" !
+
+Je vous laisse imaginer la différence de performance avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire vive avant d'être envoyé sur le réseau !
+
+```ts
+import { readFile } from 'fs';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
+
+const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+  if (req.url === '/') {
+    readFile('path/to/big/file'), (err, data) => res.end(data));
+  } else {
+    res.end();
+  }
+});
+
+server.listen(8080);
+```
+
 ## Take away
 
-...
+Vous savez maintenant comment fonctionnent les Streams de Node.js.
 
 ## Pour aller plus loin
 

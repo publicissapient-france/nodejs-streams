@@ -257,51 +257,81 @@ function feedStream(): void {
 feedStream();
 ```
 
-> Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter avec la méthode `pipe()` ou la fonction `pipeline()`.
+> Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter entres-eux, avec la méthode `pipe()` ou la fonction `pipeline()`.
 
 ## Connecter les Streams "Readable" et "Writable"
 
-Vous pouvez très simplement connecter la sortie d'un Stream "Readable" à l'entrée d'un Stream "Writable". Depuis Node 10, il existe deux manières de le faire. La seconde plus moderne, permet de mutualiser la gestion des erreurs.
+Il y a 2 manières de connecter la sortie d'un Stream "Readable" à l'entrée d'un Stream "Writable". La seconde, plus moderne, est apparue avec Node.js 10 et permet de mutualiser la gestion des erreurs.
 
-Mais avant de rentrer dans le détail, profitons de l'occasion pour parler de la gestion des erreurs.
+Alors avant de vous présenter la syntaxe permettant de connecter les Streams entre-eux, voyons tout d'abord comment gérer les erreurs dans les Streams.
 
 ### Gestion des erreurs
 
-Lorsqu'une erreur se produit dans un Stream "Readable" ou "Writable", celui-ci émet l'événement `"error"` auquel il est fortement conseillé de s'abonner pour un code robuste.
+Pour levez une erreur dans un Stream "Readable", vous devez émettre l'événement `"error"`, signifiant ainsi que vous n'avez pas pu produire la donnée :
 
 ```ts
-someStream.on('error', logError);
-
-function logError(err: Error): void {
-  console.error(err);
+class ReadAndEmitError extends Readable {
+  _read(): void {
+    this.emit('error', new Error('Unable to read data.'));
+  }
 }
+
+new ReadAndEmitError().on('error', err => console.error(err.message));
 ```
+
+Pour levez une erreur dans un Stream "Writable" et signifier ainsi que vous n'avez pas pu traiter la donnée, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
+
+```ts
+class WriteAndEmitError extends Writable {
+  _write(): void {
+    this.emit('error', new Error('Unable to write data.'));
+  }
+}
+
+new WriteAndEmitError().on('error', err => console.error(err.message));
+```
+
+...soit, appeler la fonction `next` et fournir l'erreur en paramètre :
+
+```ts
+class WriteAndCallNextWithError extends Writable {
+  _write(chunk: string, encoding: string, next: (error?: Error) => void): void {
+    next(new Error('Unable to write data!'));
+  }
+}
+
+new WriteAndEmitError().on('error', err => console.error(err.message));
+```
+
+> Pour le consommateur de votre Stream, il est fortement conseillé de s'abonner aux événements `"error"` que votre Stream pourrait éventuellement émettre.
+
+Voyons maintenant comment connecter les Streams entre-eux.
 
 ### La méthode `pipe()`
 
-Le première méthode classique, consiste à utiliser la méthode `pipe()` du Stream Readable.
+La manière classique de connecter des Streams, consiste à utiliser la méthode `pipe()` du Stream Readable.
 
 ```ts
-import { pipeline } from 'stream';
-
 const readable = new ReadableCounter();
 const writable = new WritableLogger();
 
-readable.on('error', logError);
-writable.on('error', logError);
+readable.on('error', (err: Error) => console.error(err.message));
+writable.on('error', (err: Error) => console.error(err.message));
 
 readable.pipe(writable);
-
-function logError(err: Error): void {
-  console.error(err);
-}
 ```
 
-Mais dans ce cas, vous devez gérer les erreurs pour chaque Stream séparément. Si vous écrivez quelque chose comme `readable.pipe(writable).on('error', logError)` vous n'attraperai que les erreurs de `writable`.
+Mais de cette manière, le consommateur est obligé de gérer les erreurs de chaque Stream séparément, en s'abonnant aux événements `"error"` pour chacun d'entre-eux.
+
+Notez que le code suivant, ne produira pas l'effet escompté, car seuls les erreurs du Stream "Writable" seront prises en charge :
+
+```ts
+readable.pipe(writable).on('error', (err: Error) => console.error(err.message));
+```
 
 ### La fonction `pipeline()`
 
-La seconde plus moderne, permet de mutualiser les erreurs des deux Streams pour les gérer en un seul endroit.
+La manière moderne de connecter des Streams, consiste à utiliser la fonction `pipeline()`, qui permet de mutualiser les erreurs des deux Streams afin de les gérer en un seul endroit.
 
 ```ts
 import { pipeline } from 'stream';
@@ -309,11 +339,12 @@ import { pipeline } from 'stream';
 const readable = new ReadableCounter();
 const writable = new WritableLogger();
 
-pipeline(readable, writable).on('error', logError);
-
-function logError(err: Error): void {
-  console.error(err);
-}
+pipeline(readable, writable, (err: Error) => {
+  if (err) {
+    // Gère les erreurs en provenance de "readable" et "writable", en un seul endroit !
+    console.error(err.message);
+  }
+});
 ```
 
 ## Take away

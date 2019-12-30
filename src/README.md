@@ -6,6 +6,12 @@ Vous pouvez exécuter les demos avec la commande suivante :
 ./node_modules/.bin/ts-node [path/to/file.ts]
 ```
 
+Ou lancer les tests avec la commande suivante :
+
+```bash
+npm test
+```
+
 ## Stream "Readable"
 
 ### Implémentation et tests de ReadableCounter
@@ -39,3 +45,8 @@ Vous pouvez exécuter les demos avec la commande suivante :
 ## Server HTTP
 
 - src/server/index.ts
+
+## Gestion des erreurs
+
+- src/error/index.ts
+- src/error/index.test.ts

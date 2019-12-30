@@ -261,13 +261,13 @@ feedStream();
 
 ## Connecter les Streams "Readable" et "Writable"
 
-Il y a 2 manières de connecter la sortie d'un Stream "Readable" à l'entrée d'un Stream "Writable". La seconde, plus moderne, est apparue avec Node.js 10 et permet de mutualiser la gestion des erreurs.
+Il y a 2 manières de connecter la sortie d'un Stream "Readable" à l'entrée d'un Stream "Writable". La seconde, plus moderne, est apparue avec Node.js dans sa version 10 et permet de mutualiser la gestion des erreurs.
 
-Alors avant de vous montrer comment s'y prendre, voyons tout d'abord comment gérer les erreurs dans les Streams.
+Alors avant de rentrer dans le vif du sujet, abordons tout d'abord la gestion des erreurs dans les Streams.
 
 ### Gestion des erreurs
 
-Pour lever une erreur dans un Stream "Readable", vous devez émettre l'événement `"error"`, signifiant ainsi que vous n'avez pas pu produire la donnée attendue :
+Pour lever une erreur dans un Stream "Readable", vous devez émettre l'événement `"error"`, pour indiquer que vous n'avez pas pu produire la donnée attendue :
 
 ```ts
 class ReadAndEmitError extends Readable {
@@ -279,7 +279,7 @@ class ReadAndEmitError extends Readable {
 new ReadAndEmitError().on('error', err => console.error(err.message));
 ```
 
-Pour lever une erreur dans un Stream "Writable" pour signifier que vous n'avez pas pu traiter la donnée reçue, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
+Pour lever une erreur dans un Stream "Writable" et indiquer que vous n'avez pas pu traiter la donnée reçue, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
 
 ```ts
 class WriteAndEmitError extends Writable {
@@ -291,7 +291,7 @@ class WriteAndEmitError extends Writable {
 new WriteAndEmitError().on('error', err => console.error(err.message));
 ```
 
-...soit, appeler la fonction `next` et fournir l'erreur en paramètre :
+...soit, appeler la fonction `next` et lui fournir l'erreur en paramètre :
 
 ```ts
 class WriteAndCallNextWithError extends Writable {
@@ -300,10 +300,10 @@ class WriteAndCallNextWithError extends Writable {
   }
 }
 
-new WriteAndEmitError().on('error', err => console.error(err.message));
+new WriteAndCallNextWithError().on('error', err => console.error(err.message));
 ```
 
-> Il est fortement conseillé au consommateur de votre Stream, de s'abonner aux événements `"error"`, qui peuvent être émis à n'importe quel moment.
+> Il est fortement conseillé au consommateur, de s'abonner aux événements `"error"` émis par votre Stream, afin de pouvoir y réagir de manière appropriée.
 
 Voyons maintenant comment connecter les Streams entre-eux.
 
@@ -333,7 +333,7 @@ readable.pipe(writable).on('error', (err: Error) => console.error(err.message));
 
 ### La fonction `pipeline()`
 
-La manière moderne de connecter des Streams consiste à utiliser la fonction `pipeline()`, qui permet de mutualiser les erreurs des deux Streams, afin de les gérer en un seul endroit.
+La manière moderne de connecter des Streams consiste à utiliser la fonction `pipeline()`, qui permet de mutualiser les erreurs des Streams, pour les gérer en un seul endroit.
 
 ```ts
 import { pipeline } from 'stream';
@@ -350,7 +350,7 @@ pipeline(readable, writable, (err: Error) => {
 
 ## Optimisation d'un serveur HTTP
 
-Pour conclure cette article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive du serveur.
+Pour conclure cette article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive allouée au processus du serveur.
 
 Pour cela, vous allez utiliser la fonction `createReadStream()` du module `'fs'`, qui permet de créer un Stream "Readable" à partir d'un fichier local.
 
@@ -371,7 +371,7 @@ server.listen(8080);
 
 Il vous suffit donc d'utliser la méthode `pipe()` pour connecter la lecture du fichier local à la réponse du serveur, qui vous l'avez compris, est un Stream "Writable" !
 
-Je vous laisse imaginer la différence de performance avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire vive avant d'être envoyé sur le réseau !
+Je vous laisse imaginer la différence de performance avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire avant d'être envoyé en réponse !
 
 ```ts
 import { readFile } from 'fs';
@@ -390,11 +390,21 @@ server.listen(8080);
 
 ## Take away
 
-Vous savez maintenant comment fonctionnent les Streams de Node.js.
+Vous savez maintenant comment fonctionnent les Streams de Node.js de l'intérieur, et vous avez compris qu'ils sont vraiment partout !
+
+Ensemble, nous avons vu qu'ils utilisent intensivement les modules `Buffer` et `EventEmitter`.
+Nous avons exploré les Streams "Readable" et leurs subtils modes de fonctionnement "paused" et "flowing", ainsi que les Streams "Writable", plus simple à comprendre.
+Nous avons abordé la gestion des erreurs et exploré les différentes manières de connecter les Streams entre-eux avec la méthode `pipe()` et la fonction `pipeline()`.
+
+J'espère que désormais, vous serez à l'aise pour implémenter ou tout simplement consommer des Streams.
+
+Alors, je vous souhaite un _happy streaming ^^_
 
 ## Pour aller plus loin
 
-- En savoir plus sur `Buffer` et `EventEmitter`.
-- Découvrir les Streams `Duplex`, qui sont à la fois "Readable" et "Writable".
-- Découvrir les Streams `Transform`, qui sont des Duplex particuliers.
-- Consommer les chunks des Streams Writable en parallèle en implémentant la méthode `_writev()`.
+Voici quelques pistes de sujets que vous pourriez explorer pour approfondir encore plus vos connaissances des Streams de Node.js.
+
+- [En savoir plus sur les `Buffer`](https://nodejs.org/api/buffer.html)
+- [En savoir plus sur les `EventEmitter`](https://nodejs.org/api/events.html)
+- [Découvrir les Streams `Duplex` et `Transform`, qui sont à la fois "Readable" et "Writable"](https://nodejs.org/api/stream.html#stream_duplex_and_transform_streams)
+- [Consommer les chunks des Streams "Writable" en parallèle en implémentant la méthode `_writev()`](https://nodejs.org/api/stream.html#stream_writable_writev_chunks_callback)

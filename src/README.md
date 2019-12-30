@@ -14,12 +14,12 @@ npm test
 
 ## Stream "Readable"
 
-### Implémentation et tests de ReadableCounter
+### Implémentation et tests du ReadableCounter
 
 - src/readable/counter.ts
 - src/readable/counter.test.ts
 
-### Demos de ReadableCounter
+### Demos du ReadableCounter
 
 - src/readable/demos/pipe.ts
 - src/readable/demos/data.ts
@@ -28,12 +28,12 @@ npm test
 
 ## Stream "Writable"
 
-### Implémentation et tests de WritableLogger
+### Implémentation et tests du WritableLogger
 
 - src/writable/logger.ts
 - src/writable/logger.test.ts
 
-### Demos de WritableLogger
+### Demos du WritableLogger
 
 - src/writable/demos/feed-simple.ts
 - src/writable/demos/feed.ts
@@ -42,11 +42,11 @@ npm test
 
 - src/pipe/index.ts
 
-## Server HTTP
-
-- src/server/index.ts
-
 ## Gestion des erreurs
 
 - src/error/index.ts
 - src/error/index.test.ts
+
+## Server HTTP
+
+- src/server/index.ts

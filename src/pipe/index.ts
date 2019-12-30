@@ -18,7 +18,7 @@ writable.on('error', (err: Error) => console.error(err));
 readable.pipe(writable);
 */
 
-// Nouvelle méthode avec gestion mutualisée des erreurs (à partir de node 10)
+// Nouvelle méthode avec gestion mutualisée des erreurs (à partir de Node.js v10)
 pipeline(readable, writable, (err: Error | null) => {
   if (err) {
     console.error(err);

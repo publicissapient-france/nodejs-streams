@@ -371,7 +371,7 @@ server.listen(8080);
 
 Il vous suffit donc d'utliser la méthode `pipe()` pour connecter la lecture du fichier local à la réponse du serveur, qui vous l'avez compris, est un Stream "Writable" !
 
-Je vous laisse imaginer la différence de performance avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire avant d'être envoyé en réponse !
+Je vous laisse imaginer la différence de performances avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire avant d'être envoyé en réponse !
 
 ```ts
 import { readFile } from 'fs';

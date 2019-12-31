@@ -81,7 +81,7 @@ expect(listenerMock).toHaveBeenNthCalledWith(2, data2);
 
 Dans cet exemple, `source` émet des événements `event`, auxquels s'est abonné `listenerMock` afin de traiter successivement `data1` et `data2`.
 
-_Après cette introduction, il est temps de se mettre à coder._
+_Après cette introduction, il est temps de rentrer dans le vif du sujet._
 
 ## Les Streams "Readable"
 

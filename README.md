@@ -4,7 +4,7 @@
 
 Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Node.js](https://nodejs.org/) !
 
-Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `TCP Socket`, `process stdin/sdtout`, `zlib` et `crypto`, implémentent tous l'interface Streams.
+Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `Net Socket`, `Process stdin/sdtout`, `Zlib` et `Crypto`, implémentent tous l'interface Streams.
 
 Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres paquets NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
@@ -33,6 +33,50 @@ Mais un Stream, c'est aussi un émetteur d'événements (ou "EventEmitter"), aux
 
 En résumé, l'équation est assez simple :
 __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.org/api/events.html) = [Stream](https://nodejs.org/api/stream.html)__.
+
+## Petit rappel sur les `Buffer` et `EventEmitter` de Node.js
+
+L'étude détaillée des `Buffer` et `EventEmitter` dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article sur les Streams.
+
+### Buffer
+
+Un Buffer, c'est une conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255`. Pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes.
+
+```ts
+const string = 'vidéo';
+const buffer = Buffer.from(string);
+const bytes = Array.from(buffer.values());
+const string2 = Buffer.from(bytes).toString();
+
+expect(string.length).toBe(5);
+expect(buffer.length).toBe(6); // 6 et non 5, car le "é" de "vidéo" est encodé sur 2-bit!
+expect(bytes).toEqual([118, 105, 100, 195, 169, 111]);
+expect(string2).toBe(string);
+```
+
+Dans cet exemple, `string` est stocké dans `buffer` qui est bien un tableau de `bytes` que nous reconvertissons en `string2`.
+
+## EventEmitter
+
+Node.js est basé sur une architecture orientée événement ("event-driven"). Cela signifie que les traitements des opérations asynchrones sont déclenchés, en réponse à des événements.
+
+```ts
+const source = new EventEmitter();
+const event = 'foo';
+const data1 = 'bar';
+const data2 = ['qix'];
+
+const listenerMock = jest.fn();
+source.on(event, listenerMock);
+
+source.emit(event, data1);
+source.emit(event, data2);
+
+expect(listenerMock).toHaveBeenNthCalledWith(1, data1);
+expect(listenerMock).toHaveBeenNthCalledWith(2, data2);
+```
+
+Dans cet exemple, `source` émet des événements `event`, auxquels s'est abonné `listenerMock` afin de traiter `data1` et `data2`.
 
 Après cette introduction, passons à la pratique.
 

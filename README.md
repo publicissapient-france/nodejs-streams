@@ -34,13 +34,13 @@ Mais un Stream, c'est aussi un émetteur d'événements (ou "EventEmitter"), aux
 En résumé, l'équation est assez simple :
 __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.org/api/events.html) = [Stream](https://nodejs.org/api/stream.html)__.
 
-## Petit rappel sur les `Buffer` et `EventEmitter` de Node.js
+## Rappel sur les `Buffer` et `EventEmitter`
 
-L'étude détaillée des `Buffer` et `EventEmitter` dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article sur les Streams.
+L'étude détaillée des `Buffer` et `EventEmitter` de Node.js dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article sur les Streams.
 
 ### Buffer
 
-Un Buffer, c'est une conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255`. Pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes.
+Un Buffer, c'est une conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255` (pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes).
 
 ```ts
 const string = 'vidéo';
@@ -48,10 +48,10 @@ const buffer = Buffer.from(string);
 const bytes = Array.from(buffer.values());
 const string2 = Buffer.from(bytes).toString();
 
-expect(string.length).toBe(5);
+expect(string.length).toBe(5); // car il y a bien 5 caractères dans 'vidéo'
 expect(buffer.length).toBe(6); // 6 et non 5, car le "é" de "vidéo" est encodé sur 2-bit!
-expect(bytes).toEqual([118, 105, 100, 195, 169, 111]);
-expect(string2).toBe(string);
+expect(bytes).toEqual([118, 105, 100, 195, 169, 111]); // C'est bien un tableau de nombres entre 0 et 255
+expect(string2).toBe(string); // Ouf!
 ```
 
 Dans cet exemple, `string` est stocké dans `buffer` qui est bien un tableau de `bytes` que nous reconvertissons en `string2`.
@@ -67,8 +67,11 @@ const data1 = 'bar';
 const data2 = ['qix'];
 
 const listenerMock = jest.fn();
+
+// On enregistre la fonction qui va traiter les données émises
 source.on(event, listenerMock);
 
+// On émet la donnée au travers d'événements
 source.emit(event, data1);
 source.emit(event, data2);
 
@@ -76,9 +79,9 @@ expect(listenerMock).toHaveBeenNthCalledWith(1, data1);
 expect(listenerMock).toHaveBeenNthCalledWith(2, data2);
 ```
 
-Dans cet exemple, `source` émet des événements `event`, auxquels s'est abonné `listenerMock` afin de traiter `data1` et `data2`.
+Dans cet exemple, `source` émet des événements `event`, auxquels s'est abonné `listenerMock` afin de traiter successivement `data1` et `data2`.
 
-Après cette introduction, passons à la pratique.
+_Après cette introduction, il est temps de se mettre à coder._
 
 ## Les Streams "Readable"
 

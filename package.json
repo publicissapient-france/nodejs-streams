@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Comprendre les Streams en Node.js",
   "main": "index.js",
+  "engines": {
+    "node" : ">=10"
+  },
   "scripts": {
     "format:check": "prettier --check src/**/*",
     "format": "prettier --write src/**/*",

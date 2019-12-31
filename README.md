@@ -453,5 +453,6 @@ Voici quelques pistes de sujets que vous pourriez explorer pour approfondir enco
 
 - [En savoir plus sur les `Buffer`](https://nodejs.org/api/buffer.html)
 - [En savoir plus sur les `EventEmitter`](https://nodejs.org/api/events.html)
+- [Les Streams configurés en `ObjectMode` peuvent manipuler presque tous types de données JavaScript](https://nodejs.org/api/stream.html#stream_object_mode)
 - [Découvrir les Streams `Duplex` et `Transform`, qui sont à la fois "Readable" et "Writable"](https://nodejs.org/api/stream.html#stream_duplex_and_transform_streams)
 - [Consommer les chunks des Streams "Writable" en parallèle en implémentant la méthode `_writev()`](https://nodejs.org/api/stream.html#stream_writable_writev_chunks_callback)

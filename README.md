@@ -36,7 +36,7 @@ __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.o
 
 ## Rappel sur les `Buffer` et `EventEmitter`
 
-L'étude détaillée des `Buffer` et `EventEmitter` de Node.js dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article sur les Streams.
+L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article, qui se concentre sur les Streams.
 
 ### Buffer
 

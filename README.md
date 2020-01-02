@@ -23,7 +23,7 @@ Un __Stream__, c'est un flot de données de __taille inconnue__, dont le contenu
 
 Prenons un exemple.
 
-Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement avant de commencer la lecture. A contrario, la lire en Streaming vous permet de commencer la lecture presque immédiatement, dès que les premiers chunks ont été téléchargés. En d'autres termes, dans un Buffer, une donnée incomplète est une donnée corrompue et n'est donc pas exploitable, alors que dans un Stream, la donnée est consultée dans une fenêtre temporelle et est donc par nature, incomplète à chaque instant.
+Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement avant d'en commencer la lecture. A contrario, la lire en Streaming vous permet de lancer la lecture presque immédiatement, dès que les premiers "chunks" ont été téléchargés. En d'autres termes, dans un Buffer, une donnée incomplète est une donnée corrompue et n'est donc pas exploitable, alors que dans un Stream, la donnée est consultée dans une fenêtre temporelle et est donc par nature, incomplète à chaque instant.
 
 En fait, en interne, un Stream utilise justement un Buffer comme zone tampon, pour stocker les chunks qu'il détient.
 
@@ -36,11 +36,11 @@ __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.o
 
 ## Rappel sur les `Buffer` et `EventEmitter`
 
-L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement la lecture de cette article, qui se concentre sur les Streams.
+L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article, qui se concentre sur les Streams. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement, munis des bases nécessaires.
 
 ### Buffer
 
-Un Buffer, c'est une conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255` (pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes).
+Un Buffer, c'est un conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255` (pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes).
 
 ```ts
 const string = 'vidéo';
@@ -177,7 +177,7 @@ Cette fois, le Stream émet les chunks en les stockant dans son Buffer interne. 
 
 Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle appelée par Node.js ?
 
-### Séquence des appels à `_read()`
+### Séquence des appels de la méthode `_read()`
 
 La méthode `_read()` est appelée pour la première fois lorsque le consommateur se met à l'écoute des événements `"data"` ou `"readable"` (ou suite à l'appel de la méthode `resume()`).
 
@@ -270,7 +270,7 @@ feedStream();
 
 L'enchaînement est donc assez simple : lorsque le consommateur appelle la méthode `write(chunk)` (ou `end(chunk)`), Node.js appelle en interne la méthode `_write(chunk)`. Cependant, il faut savoir que la méthode `write()` retourne un boolean, en général `true` quand tout va bien. Voyons maintenant quand et pourquoi cette méthode retourne `false` et comment en tenir compte dans votre implémentation.
 
-### Séquence des appels à `_write()`
+### Séquence des appels de la méthode `_write()`
 
 Un Stream "Writable" traite les chunks un par un par ordre d'arrivée, de manière séquentielle, préservant ainsi l'ordre des chunks. C'est pourquoi, si le consommateur de votre Stream pousse un nouveau chunk (appel à `write()`) avant que le traitement du précédent ne soit terminé (appel à `next()`), alors le nouveau chunk est stocké dans le Buffer interne.
 
@@ -350,7 +350,7 @@ class WriteAndCallNextWithError extends Writable {
 new WriteAndCallNextWithError().on('error', err => console.error(err.message));
 ```
 
-> Il est fortement conseillé au consommateur, de s'abonner aux événements `"error"` émis par votre Stream, afin de pouvoir y réagir de manière appropriée.
+> Il est fortement conseillé au consommateur, de s'abonner aux événements `"error"` émis par vos Streams, afin de pouvoir y réagir de manière appropriée.
 
 Voyons maintenant comment connecter les Streams entre-eux.
 
@@ -426,7 +426,7 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 
 const server = createServer((req: IncomingMessage, res: ServerResponse) => {
   if (req.url === '/') {
-    readFile('path/to/big/file'), (err, data) => res.end(data));
+    readFile('path/to/big/file', (err, data) => res.end(data));
   } else {
     res.end();
   }

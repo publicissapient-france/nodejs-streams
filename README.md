@@ -395,7 +395,7 @@ pipeline(readable, writable, (err: Error) => {
 });
 ```
 
-## Optimisation d'un serveur HTTP
+## Cas d'usage : optimisation d'un serveur HTTP
 
 Pour conclure cette article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive allouée au processus du serveur.
 

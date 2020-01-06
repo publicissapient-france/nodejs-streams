@@ -11,8 +11,15 @@ readable.on('data', dataHandler);
 const mode = readable.isPaused() ? 'paused' : 'flowing';
 log(`* ${mode} *`);
 
-timer('off(data)', () => readable.off('data', dataHandler), 2500);
-timer('on(data)', () => readable.on('data', dataHandler), 4500);
+timer('off(data)', () => {
+  readable.off('data', dataHandler);
+  readable.pause();
+}, 2500);
+
+timer('on(data)', () => {
+  readable.on('data', dataHandler);
+  readable.resume();
+}, 4500);
 
 function dataHandler(chunk: string): void {
   process.stdout.write(chunk);
@@ -30,10 +37,13 @@ function dataHandler(chunk: string): void {
 
 * off(data) *
 
-<0> flowing
-<0> flowing
+<2> paused
+<4> paused
 
 * on(data) *
+
+3
+4
 
 5
 <0> flowing

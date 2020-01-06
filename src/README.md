@@ -21,8 +21,9 @@ npm test
 
 ### Demos du ReadableCounter
 
-- src/readable/demos/pipe.ts
 - src/readable/demos/data.ts
+- src/readable/demos/pipe.ts
+- src/readable/demos/data-pipe.ts
 - src/readable/demos/readable.ts
 - src/readable/demos/data-and-readable.ts
 

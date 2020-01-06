@@ -56,7 +56,7 @@ expect(string2).toBe(string); // Ouf!
 
 Dans cet exemple, `string` est stocké dans `buffer` qui est bien un tableau de `bytes` que nous reconvertissons en `string2`.
 
-## EventEmitter
+### EventEmitter
 
 Node.js est basé sur une architecture orientée événement ("event-driven"). Cela signifie que les traitements des opérations asynchrones sont déclenchés, en réponse à des événements.
 

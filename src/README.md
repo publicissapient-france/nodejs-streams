@@ -1,6 +1,6 @@
 # Implémenter et consommer les Streams "Readable" et "Writable" de Node.js
 
-Vous pouvez exécuter les demos avec la commande suivante :
+Vous pouvez exécuter les démos avec la commande suivante :
 
 ```bash
 ./node_modules/.bin/ts-node [path/to/file.ts]
@@ -19,13 +19,17 @@ npm test
 - src/readable/counter.ts
 - src/readable/counter.test.ts
 
-### Demos du ReadableCounter
+### Démos du ReadableCounter
 
-- src/readable/demos/data.ts
-- src/readable/demos/pipe.ts
-- src/readable/demos/data-pipe.ts
-- src/readable/demos/readable.ts
-- src/readable/demos/data-and-readable.ts
+- src/readable/demos/1-data.ts
+- src/readable/demos/2-pipe.ts
+- src/readable/demos/3-data-pipe.ts
+- src/readable/demos/4-readable.ts
+- src/readable/demos/5-readable-and-data.ts
+
+_La démo `3-data-pipe.ts` émule le comportement de la méthode `pipe()` en utilisant les événements `data`._
+
+_La démo `5-readable-and-data.ts` montre que lorsque le consommateur s'abonne aux événements `readable` et `data`, le Stream est mode `"paused"`. C'est donc l'abonnement aux événements `readable` qui prime et détermine le mode de fonctionnement du Stream._
 
 ## Stream "Writable"
 
@@ -34,10 +38,12 @@ npm test
 - src/writable/logger.ts
 - src/writable/logger.test.ts
 
-### Demos du WritableLogger
+### Démos du WritableLogger
 
 - src/writable/demos/feed-simple.ts
 - src/writable/demos/feed.ts
+
+_Les deux démos ont le même comportement et diffèrent seulement par leur implémentation_
 
 ## Pipe des Streams "Readable" et "Writable"
 

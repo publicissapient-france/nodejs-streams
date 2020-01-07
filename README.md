@@ -207,7 +207,7 @@ class ReadableCounter extends Readable {
 
 Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lévera pas d'erreurs.
 
-En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé.
+En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé, suite aux appels de la méthode `read()`.
 
 Notez que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
 
@@ -303,6 +303,8 @@ function feedStream(): void {
 
 feedStream();
 ```
+
+En résumé, le consommateur peut rappeler la méthode `write()` tant que celle-ci retourne `true`. Dès lors qu'elle retourne `false`, il doit attendre que Node.js émette l'événement `"drain"`, indiquant que les chunks en attente ont tous été traités et le Buffer interne vidé.
 
 > Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter entres-eux, avec la méthode `pipe()` ou la fonction `pipeline()`.
 

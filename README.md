@@ -2,7 +2,7 @@
 
 ![Streams](./stream.jpg)
 
-Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au coeur de [Node.js](https://nodejs.org/) !
+Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au cœur de [Node.js](https://nodejs.org/) !
 
 Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `Net Socket`, `Process stdin/sdtout`, `Zlib` et `Crypto`, implémentent tous l'interface Streams.
 
@@ -183,7 +183,7 @@ La méthode `_read()` est appelée pour la première fois lorsque le consommateu
 
 Le contrat de la méthode `_read()` est, comme nous l'avons dit plus haut, d'appeler au moins une fois, de manière synchrone ou pas, la méthode `push(chunk)`. Une fois ce contrat rempli, Node.js rappelle immédiatement la méthode `_read()` pour demander à votre Stream de nouveaux chunks, et ainsi de suite. Ce cercle "vertueux" n'est interrompu que lorsque vous appelez `push(null)`, pour indiquer que votre Stream est terminé.
 
-Cependant, il existe un cas où Node.js va diférrer le rappel de la méthode `_read()`. Pour aborder ce cas, nous devons comprendre ce qui se passe, lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés. Allons-y !
+Cependant, il existe un cas où Node.js va différer le rappel de la méthode `_read()`. Pour aborder ce cas, nous devons comprendre ce qui se passe, lorsque votre Stream émet des chunks plus vite qu'ils ne sont consommés. Allons-y !
 
 D'un côté, dans l'implémentation de votre Stream, vous appelez la méthode `push()` pour remplir le Buffer interne avec des chunks. Et de l'autre côté, le consommateur de votre Stream appelle la méthode publique `read()` pour récupérer ces chunks et vider le Buffer interne. Mais si les chunks ne sont pas consommés assez vite, le Buffer interne va alors progressivement se remplir jusqu'à atteindre sa taille limite, appelée `highWaterMark`.
 
@@ -205,9 +205,9 @@ class ReadableCounter extends Readable {
 }
 ```
 
-Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lévera pas d'erreurs.
+Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lèvera pas d'erreurs.
 
-En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatemment la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé, suite aux appels de la méthode `read()`.
+En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatement la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé, suite aux appels de la méthode `read()`.
 
 Notez que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
 
@@ -418,7 +418,7 @@ const server = createServer((req: IncomingMessage, res: ServerResponse) => {
 server.listen(8080);
 ```
 
-Il vous suffit donc d'utliser la méthode `pipe()` pour connecter la lecture du fichier local à la réponse du serveur, qui vous l'avez compris, est un Stream "Writable" !
+Il vous suffit donc d'utiliser la méthode `pipe()` pour connecter la lecture du fichier local à la réponse du serveur, qui vous l'avez compris, est un Stream "Writable" !
 
 Je vous laisse imaginer la différence de performances avec l'implémentation suivante, où le fichier est intégralement chargé en mémoire avant d'être envoyé en réponse !
 

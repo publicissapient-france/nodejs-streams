@@ -1,6 +1,6 @@
 # Implémenter et consommer les Streams "Readable" et "Writable" de Node.js
 
-![Streams](./stream.jpg)
+![Streams](./img/stream.jpg)
 
 Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au cœur de [Node.js](https://nodejs.org/) !
 
@@ -36,7 +36,7 @@ __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.o
 
 ## Rappel sur les `Buffer` et `EventEmitter`
 
-L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article, qui se concentre sur les Streams. Je vais donc vous en dire juste assez, pour vous permettre de poursuivre sereinement, munis des bases nécessaires.
+L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article, qui se concentre sur les Streams. Mais un résumé de ces notions importantes s'impose, pour vous permettre d'en poursuivre la lecture sereinement, munis des bases nécessaires.
 
 ### Buffer
 
@@ -44,7 +44,7 @@ Un Buffer, c'est un conteneur dans lequel est stockée de la donnée au format b
 
 ```ts
 const string = 'vidéo';
-const buffer = Buffer.from(string);
+const buffer = Buffer.from(string, 'utf8');
 const bytes = Array.from(buffer.values());
 const string2 = Buffer.from(bytes).toString();
 
@@ -209,6 +209,8 @@ Comprenez bien que ce comportement a pour but de vous permettre de réguler votr
 
 En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatement la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé, suite aux appels de la méthode `read()`.
 
+![Séquence des appels _read()](./img/sequence-read.png)
+
 Notez que la propriété `highWaterMark`, dont la valeur par défaut est `16Kb`, est configurable dans le constructeur de la classe `Readable`.
 
 ```ts
@@ -306,6 +308,8 @@ feedStream();
 
 En résumé, le consommateur peut rappeler la méthode `write()` tant que celle-ci retourne `true`. Dès lors qu'elle retourne `false`, il doit attendre que Node.js émette l'événement `"drain"`, indiquant que les chunks en attente ont tous été traités et le Buffer interne vidé.
 
+![Séquence des appels _write()](./img/sequence-write.png)
+
 > Vous savez maintenant comment fonctionnent d'un côté les Streams "Readable" et de l'autre les Streams "Writable". Voyons maintenant comment les connecter entres-eux, avec la méthode `pipe()` ou la fonction `pipeline()`.
 
 ## Connecter les Streams "Readable" et "Writable"
@@ -325,7 +329,9 @@ class ReadAndEmitError extends Readable {
   }
 }
 
-new ReadAndEmitError().on('error', err => console.error(err.message));
+const readable = new ReadAndEmitError();
+
+readable.on('error', err => console.error(err.message));
 ```
 
 Pour lever une erreur dans un Stream "Writable" et indiquer que vous n'avez pas pu traiter la donnée reçue, vous pouvez soit émettre l'événement `"error"` (de la même manière que pour un Stream "Readable") :
@@ -337,7 +343,9 @@ class WriteAndEmitError extends Writable {
   }
 }
 
-new WriteAndEmitError().on('error', err => console.error(err.message));
+const writable = new WriteAndEmitError();
+
+writable.on('error', err => console.error(err.message));
 ```
 
 ...soit, appeler la fonction `next` et lui fournir l'erreur en paramètre :
@@ -349,12 +357,14 @@ class WriteAndCallNextWithError extends Writable {
   }
 }
 
-new WriteAndCallNextWithError().on('error', err => console.error(err.message));
+const writable = new WriteAndCallNextWithError();
+
+writable.on('error', err => console.error(err.message));
 ```
 
 > Il est fortement conseillé au consommateur, de s'abonner aux événements `"error"` émis par vos Streams, afin de pouvoir y réagir de manière appropriée.
 
-Voyons maintenant comment connecter les Streams entre-eux.
+Voyons maintenant comment connecter les Streams entre eux.
 
 ### La méthode `pipe()`
 
@@ -367,7 +377,7 @@ const writable = new WritableLogger();
 readable.pipe(writable);
 ```
 
-Mais de cette manière, le consommateur est obligé de gérer les erreurs de chaque Stream séparément, en s'abonnant aux événements `"error"` pour chacun d'entre-eux.
+Mais de cette manière, le consommateur est obligé de gérer les erreurs de chaque Stream séparément, en s'abonnant aux événements `"error"` pour chacun d'entre eux.
 
 ```ts
 readable.on('error', (err: Error) => console.error(err.message));
@@ -443,7 +453,7 @@ Vous savez maintenant comment fonctionnent les Streams de Node.js de l'intérieu
 
 Ensemble, nous avons vu qu'ils utilisent intensivement les modules `Buffer` et `EventEmitter`.
 Nous avons exploré les Streams "Readable" et leurs subtils modes de fonctionnement "paused" et "flowing", ainsi que les Streams "Writable", plus simple à comprendre.
-Nous avons abordé la gestion des erreurs et exploré les différentes manières de connecter les Streams entre-eux avec la méthode `pipe()` et la fonction `pipeline()`.
+Nous avons abordé la gestion des erreurs et exploré les différentes manières de connecter les Streams entre eux avec la méthode `pipe()` et la fonction `pipeline()`.
 
 J'espère que désormais, vous serez à l'aise pour implémenter ou tout simplement consommer des Streams.
 

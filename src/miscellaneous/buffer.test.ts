@@ -1,7 +1,7 @@
 describe('Buffer', () => {
   test('should works with Bytes', () => {
     const string = 'vidéo';
-    const buffer = Buffer.from(string);
+    const buffer = Buffer.from(string, 'utf8');
     const bytes = Array.from(buffer.values());
     const string2 = Buffer.from(bytes).toString();
 

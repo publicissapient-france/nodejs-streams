@@ -4,9 +4,9 @@
 
 Les [Streams](https://nodejs.org/api/stream.html) sont vraiment au cœur de [Node.js](https://nodejs.org/) !
 
-Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... A titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `Net Socket`, `Process stdin/sdtout`, `Zlib` et `Crypto`, implémentent tous l'interface Streams.
+Si vous avez touché à Node.js, vous avez très certainement manipulé des Streams, sans forcément vous en rendre compte... À titre d'exemples, `HTTP IncomingMessage/ServerResponse`, `Net Socket`, `Process stdin/sdtout`, `Zlib` et `Crypto`, implémentent tous l'interface Streams.
 
-Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaitre le framework Express et autres paquets NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
+Si vous souhaitez mettre dans votre CV "Développeur Node.js", vous ne pouvez pas vous contenter de connaître le framework Express et autres paquets NPM non moins indispensables. Vous serez au mieux un "Développeur NPM", mais je ne suis pas sûr qu'un tel poste existe vraiment... Ce serait un peu comme si vous vouliez être un développeur JavaScript avec seulement jQuery dans votre arsenal (ça vous rappelle peut-être quelque chose). Alors, si vous voulez vraiment être à l'aise avec les Streams et devenir un Ninja en Node.js, vous êtes au bon endroit !
 
 __Dans cet article, je vais vous expliquer en détail, le fonctionnement interne des Streams "Readable" et "Writable", pour que vous soyez vraiment à l'aise pour en implémenter et en consommer.__
 
@@ -23,7 +23,7 @@ Un __Stream__, c'est un flot de données de __taille inconnue__, dont le contenu
 
 Prenons un exemple.
 
-Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement avant d'en commencer la lecture. A contrario, la lire en Streaming vous permet de lancer la lecture presque immédiatement, dès que les premiers "chunks" ont été téléchargés. En d'autres termes, dans un Buffer, une donnée incomplète est une donnée corrompue et n'est donc pas exploitable, alors que dans un Stream, la donnée est consultée dans une fenêtre temporelle et est donc par nature, incomplète à chaque instant.
+Lire une vidéo dans un Buffer, vous oblige à la télécharger entièrement avant d'en commencer la lecture. À contrario, la lire en Streaming vous permet de lancer la lecture presque immédiatement, dès que les premiers "chunks" ont été téléchargés. En d'autres termes, dans un Buffer, une donnée incomplète est une donnée corrompue et n'est donc pas exploitable, alors que dans un Stream, la donnée est consultée dans une fenêtre temporelle et est donc par nature, incomplète à chaque instant.
 
 En fait, en interne, un Stream utilise justement un Buffer comme zone tampon, pour stocker les chunks qu'il détient.
 
@@ -36,11 +36,11 @@ __[Buffer](https://nodejs.org/api/buffer.html) + [EventEmitter](https://nodejs.o
 
 ## Rappel sur les `Buffer` et `EventEmitter`
 
-L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article, qui se concentre sur les Streams. Mais un résumé de ces notions importantes s'impose, pour vous permettre d'en poursuivre la lecture sereinement, munis des bases nécessaires.
+L'étude détaillée des `Buffer` et `EventEmitter` de Node.js, dépasse le cadre de cet article, qui se concentre sur les Streams. Mais un résumé de ces notions importantes s'impose, pour vous permettre d'en poursuivre la lecture sereinement.
 
 ### Buffer
 
-Un Buffer, c'est un conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255` (pour rappel, un Byte est une donnée binaire encodée sur 8-bit et qui supporte donc jusqu'à 256 valeurs différentes).
+Un Buffer, c'est un conteneur dans lequel est stockée de la donnée au format binaire. On peut le voir comme un tableau de `Bytes`, c'est-à-dire un tableau de nombres compris entre `0` et `255`.
 
 ```ts
 const string = 'vidéo';
@@ -116,7 +116,7 @@ Nous allons revenir sur ce point essentiel un peu plus loin, mais tout d'abord v
 
 Un Stream Readable a 2 modes de fonctionnement possibles : à l'arrêt ("paused") ou en train de s'écouler ("flowing"). Et paradoxalement, on peut le consommer dans l'un comme dans l'autre de ces modes (et donc même s'il est "paused" !).
 
-A sa création, un Stream Readable est en mode "paused". La méthode `isPaused()` permet de déterminer tout au long de son cycle de vie, le mode dans lequel il opère.
+À sa création, un Stream Readable est en mode "paused". La méthode `isPaused()` permet de déterminer tout au long de son cycle de vie, le mode dans lequel il opère.
 
 #### En mode "flowing"
 
@@ -175,7 +175,7 @@ Cette fois, le Stream émet les chunks en les stockant dans son Buffer interne. 
 
 > En résumé, on peut assimiler la consommation en mode "flowing" aux "push notifications" des WebSockets et la consommation en mode "paused" aux "pull data" d'une API Rest.
 
-Revenons maintenant à la méthode privée `_read()`. A quels moments est-elle appelée par Node.js ?
+Revenons maintenant à la méthode privée `_read()`. À quels moments est-elle appelée par Node.js ?
 
 ### Séquence des appels de la méthode `_read()`
 
@@ -205,7 +205,7 @@ class ReadableCounter extends Readable {
 }
 ```
 
-Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en terme de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lèvera pas d'erreurs.
+Comprenez bien que ce comportement a pour but de vous permettre de réguler votre Stream (en termes de gestion de la mémoire), mais que cette régulation n'est pas stricte. Car, même si vous continuez d'appeler `push(chunk)` lorsque `highWaterMark` a été dépassé, Node.js ne lèvera pas d'erreurs.
 
 En résumé, si la méthode `push(chunk)` retourne `true` alors Node.js rappelle immédiatement la méthode `_read()`. Sinon, cet appel est différé au moment où le Buffer interne parvient à être vidé, suite aux appels de la méthode `read()`.
 
@@ -384,7 +384,7 @@ readable.on('error', (err: Error) => console.error(err.message));
 writable.on('error', (err: Error) => console.error(err.message));
 ```
 
-Notez que le code suivant, ne produira pas l'effet escompté, car seuls les erreurs du Stream "Writable" seront prises en charge :
+Notez que le code suivant, ne produira pas l'effet escompté, car seules les erreurs du Stream "Writable" seront prises en charge :
 
 ```ts
 readable.pipe(writable).on('error', (err: Error) => console.error(err.message));
@@ -409,7 +409,7 @@ pipeline(readable, writable, (err: Error) => {
 
 ## Cas d'usage : optimisation d'un serveur HTTP
 
-Pour conclure cette article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive allouée au processus du serveur.
+Pour conclure cet article, vous allez implémenter en quelques lignes de code, un serveur HTTP capable de servir un fichier local de très grande taille, sans pour autant surcharger la mémoire vive allouée au processus du serveur.
 
 Pour cela, vous allez utiliser la fonction `createReadStream()` du module `'fs'`, qui permet de créer un Stream "Readable" à partir d'un fichier local.
 
